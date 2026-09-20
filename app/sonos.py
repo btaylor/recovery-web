@@ -58,6 +58,18 @@ class Sonos:
         coord.add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])
         coord.play_from_queue(start)
 
+    def append_songs(self, urls_and_songs) -> None:
+        self.coordinator().add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])
+
+    def truncate_queue(self, keep: int) -> None:
+        """Drop everything after the first `keep` queue items (playback continues)."""
+        coord = self.coordinator()
+        extra = coord.queue_size - keep
+        if extra > 0:
+            coord.avTransport.RemoveTrackRangeFromQueue(
+                [("InstanceID", 0), ("UpdateID", 0), ("StartingIndex", keep + 1), ("NumberOfTracks", extra)]
+            )
+
     def now_playing(self) -> dict | None:
         coord = self.coordinator()
         if coord is None:

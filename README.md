@@ -41,3 +41,7 @@ Or: `docker compose up --build`.
 - `app/sonos.py` – SoCo wrapper: online speakers by room name, the persisted playback group
   (`STATE_DIR/sonos.json`), and loading songs into the queue. Transport and volume use SoCo directly
   (`coordinator.play()`, `speaker.volume`, `coordinator.group.volume` for the proportional master).
+- `app/player.py` – playback orchestration (`app.extensions["player"]`): play an album/playlist with the
+  mix from `getSimilarSongs2` (genre fallback) appended up front for a gapless handoff; "stop after" removes
+  it; `status()` adds the current song, ♥ state and the ~30s handoff banner; `toggle_star()`.
+  The follow-on setting is in-memory (resets on restart).

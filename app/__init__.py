@@ -2,6 +2,7 @@ from flask import Flask
 
 from .config import Config
 from .navidrome import make_client
+from .player import Player
 from .sonos import Sonos
 
 
@@ -10,6 +11,7 @@ def create_app(config: Config | None = None) -> Flask:
     cfg = app.extensions["hm_config"] = config or Config.from_env()
     app.extensions["nd"] = make_client(cfg)
     app.extensions["sonos"] = Sonos(cfg.state_dir)
+    app.extensions["player"] = Player(app.extensions["nd"], app.extensions["sonos"])
 
     from .routes import bp
 
