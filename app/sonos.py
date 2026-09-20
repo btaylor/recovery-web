@@ -10,6 +10,10 @@ import soco
 from soco.data_structures import DidlMusicTrack, DidlResource
 
 
+class NoRoom(RuntimeError):
+    """No online speaker in the playback group."""
+
+
 class Sonos:
     def __init__(self, state_dir: str):
         self._state = Path(state_dir) / "sonos.json"
@@ -55,6 +59,8 @@ class Sonos:
     def play_songs(self, urls_and_songs, start: int = 0) -> None:
         """Replace the queue with (stream_url, song) pairs and play from index `start`."""
         coord = self.coordinator()
+        if coord is None:
+            raise NoRoom("Choose a room first")
         coord.clear_queue()
         coord.play_mode = "NORMAL"  # albums play in order, whatever the speaker was left on
         coord.add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])

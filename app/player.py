@@ -15,17 +15,21 @@ def _seconds(hms: str) -> int:
 class Player:
     def __init__(self, nd, sonos):
         self.nd, self.sonos = nd, sonos
-        self.follow_on = True   # default for each play; change per play or from now-playing
+        self.follow_on_default = True  # what the next play does; set from the album screen
+        self.follow_on = True          # whether the queue that is playing now has a mix
         self.songs = []         # what is in the Sonos queue, in order
         self.source_len = 0     # how many of those are the album/playlist (rest is the mix)
 
-    def play_album(self, album_id: str, start: int = 0) -> None:
-        self._play(self.nd.get_album(album_id).song, start)
+    def play_album(self, album_id: str, start: int = 0, follow_on: bool | None = None) -> None:
+        self._play(self.nd.get_album(album_id).song, start, follow_on)
 
-    def play_playlist(self, playlist_id: str, start: int = 0) -> None:
-        self._play(self.nd.get_playlist(playlist_id).entry, start)
+    def play_playlist(self, playlist_id: str, start: int = 0, follow_on: bool | None = None) -> None:
+        self._play(self.nd.get_playlist(playlist_id).entry, start, follow_on)
 
-    def _play(self, songs, start):
+    def _play(self, songs, start, follow_on):
+        if not songs:  # e.g. an empty playlist
+            return
+        self.follow_on = self.follow_on_default if follow_on is None else follow_on
         self.songs, self.source_len = list(songs), len(songs)
         if self.follow_on:
             self.songs += self._mix(songs)

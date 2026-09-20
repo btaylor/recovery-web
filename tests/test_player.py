@@ -52,10 +52,12 @@ def test_falls_back_to_genre_when_no_similar_songs(p):
 
 
 def test_follow_on_off_means_album_only(p):
-    p.follow_on = False
+    p.follow_on_default = False
     p.play_album("al")
     assert queued(p)[0] == ["s1", "s2", "s3"]
     p.nd.get_similar_songs2.assert_not_called()
+    p.play_album("al", follow_on=True)  # per-play override
+    assert len(queued(p)[0]) == 5 and p.follow_on
 
 
 def test_stop_after_removes_mix_and_can_be_undone(p):
@@ -94,3 +96,9 @@ def test_toggle_star(p):
     p.nd.get_song.side_effect = lambda i: song(i, starred="x")
     assert p.toggle_star("s1") is False
     p.nd.unstar.assert_called_once_with(["s1"])
+
+
+def test_playing_an_empty_playlist_is_a_noop(p):
+    p.nd.get_playlist.return_value = NS(entry=None)
+    p.play_playlist("empty")
+    p.sonos.play_songs.assert_not_called()

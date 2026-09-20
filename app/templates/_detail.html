@@ -1,0 +1,30 @@
+<div class="scrim" hx-on:click="document.getElementById('detail').innerHTML=''"></div>
+<section class="panel" aria-label="{{ item.name }}">
+  <div class="panel__bar">
+    <button hx-on:click="document.getElementById('detail').innerHTML=''" aria-label="Back">‹</button>
+  </div>
+  <div class="panel__head">
+    <div class="panel__art">{% if item.cover_art %}<img src="/cover/{{ item.cover_art }}?size=400" alt="">{% endif %}</div>
+    <div class="panel__info">
+      <h2>{{ item.name }}</h2>
+      <div class="panel__sub">{{ sub }}</div>
+      <div class="panel__meta">{{ meta }}</div>
+      <div class="panel__actions">
+        <button class="play" hx-post="/play/{{ kind }}/{{ item.id }}" hx-swap="none"
+                hx-on::after-request="this.textContent = event.detail.successful ? '▶ Playing' : (event.detail.xhr.responseText || 'Failed')">▶ Play</button>
+        <select name="room" aria-label="Room" hx-post="/group" hx-swap="none" hx-trigger="change">
+          {% if not room %}<option value="" selected disabled>Choose room…</option>{% endif %}
+          {% for r in rooms %}<option{% if r == room %} selected{% endif %}>{{ r }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+  {% include "_follow.html" %}
+  <ol class="tracks">
+    {% for s in songs %}
+    <li><button hx-post="/play/{{ kind }}/{{ item.id }}?start={{ loop.index0 }}" hx-swap="none">
+      <span class="n">{{ loop.index }}</span><span class="t">{{ s.title }}{% if kind == "playlist" %}<small>{{ s.artist }}</small>{% endif %}</span><span class="d">{{ s.duration|mmss }}</span>
+    </button></li>
+    {% endfor %}
+  </ol>
+</section>

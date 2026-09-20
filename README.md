@@ -48,3 +48,6 @@ Or: `docker compose up --build`.
 - `app/routes.py` + `templates/` – browse UI. `/` renders the wall; `/albums` returns wall fragments
   (genre / search / `offset` paging) that htmx swaps in, with infinite scroll via `hx-trigger="revealed"`.
   Genre chips, the "⌄ N" sheet (HTML `popover`, no JS) and search all drive the same fragment.
+- Album / playlist detail is a panel (`#detail`) swapped in over the wall, so the wall's scroll position
+  survives. `POST /play/<album|playlist>/<id>?start=N` plays (tapping a track = `start`), `POST /group`
+  picks the room, `POST /follow-on` flips what the *next* play does after the source ends.

@@ -1,0 +1,4 @@
+<div id="follow" class="follow">
+  <span>{% if follow_on %}Then: mix from this {{ kind }}{% else %}Then: stop{% endif %}</span>
+  <button hx-post="/follow-on?kind={{ kind }}" hx-target="#follow" hx-swap="outerHTML">change</button>
+</div>

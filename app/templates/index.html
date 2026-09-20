@@ -8,8 +8,11 @@
 
 {% block content %}
 <main id="wall" class="wall">{% include "_wall.html" %}</main>
+<div id="detail"></div>
 
 <header class="glass capsule">
+  <a class="chip chip--lists{% if playlists is defined %} on{% endif %}" href="/?lists=1" hx-get="/playlists" hx-target="#wall"
+     hx-push-url="/?lists=1" hx-on:click="document.getElementById('q').value=''">▤ Lists</a>
   <span id="current" class="chip chip--current">{{ current }}</span>
   <nav class="rail" aria-label="Genres">
     {% if current != "All" %}{{ chip("All", "") }}{% endif %}
