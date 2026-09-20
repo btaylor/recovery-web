@@ -32,3 +32,9 @@ Navidrome must be reachable **from the speakers**, since they fetch audio direct
     pytest
 
 Or: `docker compose up --build`.
+
+## Code layout
+
+- `app/navidrome.py` – builds a [py-opensonic](https://pypi.org/project/py-opensonic/) `Connection`
+  (available as `app.extensions["nd"]`), plus a stream-URL helper and a cover-art fetch.
+- `/cover/<id>?size=N` – cover-art proxy with browser caching.

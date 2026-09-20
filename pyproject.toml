@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "flask>=3.0",
     "requests>=2.31",
+    "py-opensonic>=10.4",
     "soco>=0.30",
     "gunicorn>=22.0",
 ]
