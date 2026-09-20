@@ -1,11 +1,32 @@
 {% extends "base.html" %}
+{% macro chip(name, href_genre) %}
+<a class="chip" href="/{% if href_genre %}?genre={{ href_genre|urlencode }}{% endif %}"
+   hx-get="/albums{% if href_genre %}?genre={{ href_genre|urlencode }}{% endif %}" hx-target="#wall"
+   hx-push-url="/{% if href_genre %}?genre={{ href_genre|urlencode }}{% endif %}"
+   hx-on:click="document.getElementById('q').value=''">{{ name }}</a>
+{% endmacro %}
+
 {% block content %}
-<main class="wall" aria-label="Albums"></main>
+<main id="wall" class="wall">{% include "_wall.html" %}</main>
 
 <header class="glass capsule">
-  <span class="chip chip--lists">▤ Lists</span>
-  <span class="chip chip--current">All</span>
+  <span id="current" class="chip chip--current">{{ current }}</span>
+  <nav class="rail" aria-label="Genres">
+    {% if current != "All" %}{{ chip("All", "") }}{% endif %}
+    {% for g in genres %}{{ chip(g.value, g.value) }}{% endfor %}
+  </nav>
+  <input id="q" class="search" type="search" name="q" value="{{ q }}" placeholder="⌕" aria-label="Search albums"
+         hx-get="/albums" hx-target="#wall" hx-trigger="input changed delay:300ms, search"
+         hx-push-url="false">
+  <button class="chip chip--all" popovertarget="genres">⌄ {{ genres|length }}</button>
 </header>
+
+<div id="genres" popover class="glass sheet" onclick="if(event.target.closest('a'))this.hidePopover()">
+  <h2>All genres</h2>
+  {% for g in genres %}
+  <div class="sheet__row">{{ chip(g.value, g.value) }}<span>{{ g.album_count }} albums</span></div>
+  {% endfor %}
+</div>
 
 <footer class="glass player">
   <div class="player__art"></div>
@@ -14,4 +35,5 @@
     <div class="player__sub">House Music</div>
   </div>
 </footer>
+<script src="{{ url_for('static', filename='js/peek.js') }}" defer></script>
 {% endblock %}

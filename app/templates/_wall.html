@@ -1,0 +1,13 @@
+{% if oob %}<span id="current" class="chip chip--current" hx-swap-oob="true">{{ current }}</span>{% endif %}
+{% for a in albums %}
+<a class="tile" href="/album/{{ a.id }}" data-peek="{{ a.name }} · {{ a.artist }}">
+  {% if a.cover_art %}<img src="/cover/{{ a.cover_art }}?size=300" alt="{{ a.name }} by {{ a.artist }}" loading="lazy" onerror="this.remove()">{% endif %}
+  <span class="peek">{{ a.name }}<small>{{ a.artist }}</small></span>
+</a>
+{% else %}
+{% if oob or not next %}<p class="empty">No albums{% if q %} matching “{{ q }}”{% endif %}.</p>{% endif %}
+{% endfor %}
+{% if next %}
+<div class="sentinel" hx-get="/albums?offset={{ next }}{% if genre %}&genre={{ genre|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"
+     hx-trigger="revealed" hx-swap="outerHTML"></div>
+{% endif %}

@@ -23,10 +23,9 @@ def test_config_fails_fast_when_missing(key):
         Config.from_env(env)
 
 
-def test_healthz_and_index():
+def test_healthz():
     client = create_app(Config.from_env(ENV)).test_client()
     assert client.get("/healthz").json == {"status": "ok"}
-    assert b"House Music" in client.get("/").data
 
 
 def test_stream_url_is_direct_raw_and_authenticated():

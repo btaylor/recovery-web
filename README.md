@@ -45,3 +45,6 @@ Or: `docker compose up --build`.
   mix from `getSimilarSongs2` (genre fallback) appended up front for a gapless handoff; "stop after" removes
   it; `status()` adds the current song, ♥ state and the ~30s handoff banner; `toggle_star()`.
   The follow-on setting is in-memory (resets on restart).
+- `app/routes.py` + `templates/` – browse UI. `/` renders the wall; `/albums` returns wall fragments
+  (genre / search / `offset` paging) that htmx swaps in, with infinite scroll via `hx-trigger="revealed"`.
+  Genre chips, the "⌄ N" sheet (HTML `popover`, no JS) and search all drive the same fragment.
