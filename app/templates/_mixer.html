@@ -1,0 +1,23 @@
+<div id="mixer" class="mixer">
+  <div class="mixer__head"><small>Playing to · {{ m.grouped|length }} room{{ "s" if m.grouped|length != 1 }}</small><small>{{ m.master }}</small></div>
+  {% if m.grouped %}
+  <label class="mixer__row master"><b>All rooms</b>
+    <input type="range" min="0" max="100" value="{{ m.master }}" name="v" hx-post="/volume" hx-trigger="change" hx-target="#mixer" hx-swap="outerHTML"></label>
+  {% for name, vol in m.grouped %}
+  <div class="mixer__row">
+    <input type="checkbox" checked{% if loop.first %} disabled title="This room anchors the group"{% else %} hx-post="/group/toggle" hx-vals='{"room": {{ name|tojson }}}' hx-target="#mixer" hx-swap="outerHTML"{% endif %} aria-label="{{ name }}">
+    <span>{{ name }}</span>
+    <input type="range" min="0" max="100" value="{{ vol }}" name="v" hx-post="/volume/{{ name|urlencode }}" hx-trigger="change" hx-swap="none" aria-label="{{ name }} volume">
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% if m.others %}
+  <small class="mixer__sub">Not in group</small>
+  {% for name in m.others %}
+  <div class="mixer__row off">
+    <input type="checkbox"{% if not m.grouped %} disabled{% endif %} hx-post="/group/toggle" hx-vals='{"room": {{ name|tojson }}}' hx-target="#mixer" hx-swap="outerHTML" aria-label="Add {{ name }}">
+    <span>{{ name }}</span>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>

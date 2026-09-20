@@ -89,13 +89,104 @@ def play(kind, item_id):
     return "", 204
 
 
+def _refresh():
+    """Answer an action; every poller listens for this and updates straight away."""
+    return "", 204, {"HX-Trigger": "refresh"}
+
+
 @bp.post("/group")
 def group():
     room = request.form.get("room", "")
     if room not in current_app.extensions["sonos"].zones():
         abort(404)
     current_app.extensions["sonos"].set_group([room])
+    return _refresh()
+
+
+@bp.post("/group/toggle")
+def group_toggle():
+    """Join / leave a room. The first room anchors the group and can't be unchecked."""
+    sonos = current_app.extensions["sonos"]
+    room = request.form.get("room", "")
+    names = sonos.group_names
+    if room not in sonos.zones() or (names and room == names[0]):
+        abort(404)
+    sonos.set_group([n for n in names if n != room] if room in names else names + [room])
+    return render_template("_mixer.html", m=sonos.mixer())
+
+
+@bp.get("/mixer")
+def mixer():
+    return render_template("_mixer.html", m=current_app.extensions["sonos"].mixer())
+
+
+@bp.post("/volume")
+def master_volume():
+    """Master: absolute `v`, or relative `delta` (keyboard). Sonos scales the rooms proportionally."""
+    group = current_app.extensions["sonos"].coordinator().group
+    if "delta" in request.args:
+        group.set_relative_volume(request.args.get("delta", type=int))
+    else:
+        group.volume = max(0, min(100, request.form.get("v", type=int)))
+    return render_template("_mixer.html", m=current_app.extensions["sonos"].mixer())
+
+
+@bp.post("/volume/<room>")
+def room_volume(room):
+    zones = current_app.extensions["sonos"].zones()
+    if room not in zones:
+        abort(404)
+    zones[room].volume = max(0, min(100, request.form.get("v", type=int)))
     return "", 204
+
+
+@bp.get("/player")
+def player_bar():
+    return render_template("_player.html", st=current_app.extensions["player"].status(),
+                           room=current_app.extensions["sonos"].label())
+
+
+@bp.get("/now")
+def now():
+    return render_template("_now.html")
+
+
+@bp.get("/now/top")
+def now_top():
+    return render_template("_np_top.html", st=current_app.extensions["player"].status())
+
+
+@bp.get("/speakers")
+def speakers():
+    return render_template("_speakers.html", m=current_app.extensions["sonos"].mixer())
+
+
+@bp.post("/transport/<action>")
+def transport(action):
+    if action not in ("toggle", "next", "prev"):
+        abort(404)
+    current_app.extensions["sonos"].transport(action)
+    return _refresh()
+
+
+@bp.post("/star")
+def star():
+    current_app.extensions["player"].star_current()
+    return _refresh()
+
+
+@bp.post("/now/follow-on")
+def now_follow_on():
+    """The "After this album" switch: changes the mix for the queue that is playing now."""
+    player = current_app.extensions["player"]
+    player.set_follow_on(not player.follow_on)
+    return _refresh()
+
+
+@bp.app_template_filter("clock")
+def clock(hms):
+    h, m, sec = (int(x) for x in hms.split(":"))
+    return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
 
 
 @bp.post("/follow-on")

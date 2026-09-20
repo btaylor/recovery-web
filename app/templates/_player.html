@@ -1,0 +1,23 @@
+<footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every 3s" hx-swap="outerHTML">
+  {% if st and st.title %}
+  <button class="player__open" hx-get="/now" hx-target="#detail" aria-label="Now playing">
+    <span class="player__art">{% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=100" alt="">{% endif %}</span>
+  </button>
+  <div class="player__meta">
+    <button class="player__title" hx-get="/now" hx-target="#detail">{{ st.title }}</button>
+    <div class="player__sub">{{ st.artist }}{% if room %} · <button class="room" hx-get="/speakers" hx-target="#detail">{{ room }}</button>{% endif %}</div>
+  </div>
+  <div class="transport transport--mini">
+    {% if st.song %}<button class="heart{% if st.starred %} on{% endif %}" hx-post="/star" hx-swap="none" aria-label="Favourite">{{ "♥" if st.starred else "♡" }}</button>{% endif %}
+    <button hx-post="/transport/prev" hx-swap="none" aria-label="Previous">⏮</button>
+    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{{ "⏸" if st.state == "PLAYING" else "▶" }}</button>
+    <button hx-post="/transport/next" hx-swap="none" aria-label="Next">⏭</button>
+  </div>
+  {% else %}
+  <span class="player__art"></span>
+  <div class="player__meta">
+    <div class="player__title">Nothing playing</div>
+    <div class="player__sub">{% if room %}<button class="room" hx-get="/speakers" hx-target="#detail">{{ room }}</button>{% else %}Pick an album{% endif %}</div>
+  </div>
+  {% endif %}
+</footer>

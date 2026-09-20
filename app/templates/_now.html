@@ -1,0 +1,6 @@
+<div class="scrim" hx-on:click="document.getElementById('detail').innerHTML=''"></div>
+<section class="panel" aria-label="Now playing">
+  <div class="panel__bar"><button hx-on:click="document.getElementById('detail').innerHTML=''" aria-label="Close">⌄</button></div>
+  <div hx-get="/now/top" hx-trigger="load" hx-swap="outerHTML"></div>
+  <div hx-get="/mixer" hx-trigger="load" hx-swap="outerHTML"></div>
+</section>

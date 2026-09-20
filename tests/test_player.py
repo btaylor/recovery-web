@@ -17,8 +17,8 @@ ALBUM = [song(1), song(2), song(3)]
 @pytest.fixture
 def p():
     nd, sonos = MagicMock(), MagicMock()
-    nd.get_album.return_value = NS(song=ALBUM)
-    nd.get_playlist.return_value = NS(entry=ALBUM)
+    nd.get_album.return_value = NS(name="Blue Hour", song=ALBUM)
+    nd.get_playlist.return_value = NS(name="Dinner", entry=ALBUM)
     nd.get_similar_songs2.return_value = [song(3), song(10), song(11)]  # s3 is on the album
     nd.get_song.side_effect = lambda i: song(i)
     nd.get_stream_url.side_effect = lambda sid, tformat: (f"http://nd/stream?id={sid}", {})
@@ -99,6 +99,20 @@ def test_toggle_star(p):
 
 
 def test_playing_an_empty_playlist_is_a_noop(p):
-    p.nd.get_playlist.return_value = NS(entry=None)
+    p.nd.get_playlist.return_value = NS(name="E", entry=None)
     p.play_playlist("empty")
     p.sonos.play_songs.assert_not_called()
+
+
+def test_status_has_progress_source_and_position_in_source(p):
+    p.play_album("al")
+    st = p.status()
+    assert st["pct"] == 20 and st["source"] == "Blue Hour" and st["of"] == (1, 3)
+    p.sonos.now_playing.return_value = {"index": 4, "position": "0:00:10", "duration": "0:03:00"}
+    assert p.status()["of"] is None  # in the mix
+
+
+def test_star_current(p):
+    p.play_album("al")
+    p.star_current()
+    p.nd.star.assert_called_once_with(["s1"])

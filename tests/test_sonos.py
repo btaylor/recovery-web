@@ -44,7 +44,7 @@ def test_group_survives_restart_and_offline_speakers_are_skipped(tmp_path):
     restarted, s = make(tmp_path, "Study")  # Kitchen is offline now
     assert restarted.group_names == ["Kitchen", "Study"]  # still remembered
     s["Study"].group.members = {s["Study"]}
-    assert restarted.coordinator() is s["Study"]
+    assert restarted.set_group(restarted.group_names) is s["Study"]
     assert "Kitchen" not in restarted.zones()
 
 
@@ -69,3 +69,44 @@ def test_play_songs_replaces_queue_and_starts_at_index(tmp_path):
     assert items[0].resources[0].duration == "0:05:20"
     assert k.play_mode == "NORMAL"
     k.play_from_queue.assert_called_once_with(0)
+
+
+def test_coordinator_lookup_is_read_only(tmp_path):
+    son, s = make(tmp_path, "Kitchen", "Study")
+    son.set_group(["Kitchen", "Study"])
+    for z in s.values():
+        z.reset_mock()
+    s["Kitchen"].group.coordinator = s["Kitchen"]
+    assert son.coordinator() is s["Kitchen"]
+    for z in s.values():
+        z.join.assert_not_called()
+        z.unjoin.assert_not_called()
+
+
+def test_mixer_and_label(tmp_path):
+    son, s = make(tmp_path, "Kitchen", "Study", "Patio")
+    s["Kitchen"].volume, s["Study"].volume = 30, 45
+    s["Kitchen"].group.coordinator = s["Kitchen"]
+    s["Kitchen"].group.volume = 38
+    son.set_group(["Kitchen", "Study"])
+    assert son.mixer() == {"master": 38, "grouped": [("Kitchen", 30), ("Study", 45)], "others": ["Patio"]}
+    assert son.label() == "Kitchen +1"
+    son.set_group(["Kitchen"])
+    assert son.label() == "Kitchen"
+
+
+def test_transport_toggles_and_survives_queue_boundary(tmp_path):
+    from soco.exceptions import SoCoException
+
+    son, s = make(tmp_path, "Kitchen")
+    k = s["Kitchen"]
+    k.group.coordinator = k
+    son.set_group(["Kitchen"])
+    k.get_current_transport_info.return_value = {"current_transport_state": "PLAYING"}
+    son.transport("toggle")
+    k.pause.assert_called_once()
+    k.get_current_transport_info.return_value = {"current_transport_state": "PAUSED_PLAYBACK"}
+    son.transport("toggle")
+    k.play.assert_called_once()
+    k.next.side_effect = SoCoException("boundary")
+    son.transport("next")  # no raise

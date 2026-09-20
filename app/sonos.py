@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import soco
+from soco.exceptions import SoCoException
 from soco.data_structures import DidlMusicTrack, DidlResource
 
 
@@ -54,11 +55,46 @@ class Sonos:
         return coord
 
     def coordinator(self) -> soco.SoCo | None:
-        return self.set_group(self.group_names)
+        """The coordinator of the saved group, as it is right now. Read-only, cheap enough to poll."""
+        zones = self.zones()
+        online = [zones[n] for n in self.group_names if n in zones]
+        return online[0].group.coordinator if online else None
+
+    def mixer(self) -> dict:
+        """Everything the speaker mixer shows: master, grouped rooms with volumes, other rooms."""
+        zones = self.zones()
+        names = [n for n in self.group_names if n in zones]
+        coord = self.coordinator()
+        return {
+            "master": coord.group.volume if coord else 0,
+            "grouped": [(n, zones[n].volume) for n in names],
+            "others": [n for n in sorted(zones) if n not in names],
+        }
+
+    def label(self) -> str:
+        """Short room label for the mini bar: "Kitchen", "Kitchen +2"."""
+        zones = self.zones()
+        names = [n for n in self.group_names if n in zones]
+        return "" if not names else names[0] + (f" +{len(names) - 1}" if len(names) > 1 else "")
+
+    def transport(self, action: str) -> None:
+        coord = self.coordinator()
+        if coord is None:
+            return
+        try:
+            if action == "toggle":
+                playing = coord.get_current_transport_info()["current_transport_state"] == "PLAYING"
+                (coord.pause if playing else coord.play)()
+            elif action == "next":
+                coord.next()
+            elif action == "prev":
+                coord.previous()
+        except SoCoException:  # e.g. next at the end of the queue
+            pass
 
     def play_songs(self, urls_and_songs, start: int = 0) -> None:
         """Replace the queue with (stream_url, song) pairs and play from index `start`."""
-        coord = self.coordinator()
+        coord = self.set_group(self.group_names)  # re-assert the group before starting
         if coord is None:
             raise NoRoom("Choose a room first")
         coord.clear_queue()

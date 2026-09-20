@@ -19,17 +19,21 @@ class Player:
         self.follow_on = True          # whether the queue that is playing now has a mix
         self.songs = []         # what is in the Sonos queue, in order
         self.source_len = 0     # how many of those are the album/playlist (rest is the mix)
+        self.label = ""
 
     def play_album(self, album_id: str, start: int = 0, follow_on: bool | None = None) -> None:
-        self._play(self.nd.get_album(album_id).song, start, follow_on)
+        a = self.nd.get_album(album_id)
+        self._play(a.song, start, follow_on, a.name)
 
     def play_playlist(self, playlist_id: str, start: int = 0, follow_on: bool | None = None) -> None:
-        self._play(self.nd.get_playlist(playlist_id).entry, start, follow_on)
+        p = self.nd.get_playlist(playlist_id)
+        self._play(p.entry, start, follow_on, p.name)
 
-    def _play(self, songs, start, follow_on):
+    def _play(self, songs, start, follow_on, label=""):
         if not songs:  # e.g. an empty playlist
             return
         self.follow_on = self.follow_on_default if follow_on is None else follow_on
+        self.label = label  # name of the album/playlist, for "Blue Hour · 3 of 9" and "Mix from Blue Hour"
         self.songs, self.source_len = list(songs), len(songs)
         if self.follow_on:
             self.songs += self._mix(songs)
@@ -65,7 +69,11 @@ class Player:
         if np is None or not 0 <= np["index"] < len(self.songs):
             return np
         song = self.songs[np["index"]]
-        left = _seconds(np["duration"]) - _seconds(np["position"])
+        dur = _seconds(np["duration"])
+        left = dur - _seconds(np["position"])
+        np["pct"] = round(100 * _seconds(np["position"]) / dur) if dur else 0
+        np["source"] = self.label
+        np["of"] = (np["index"] + 1, self.source_len) if np["index"] < self.source_len else None
         np["song"] = song
         np["starred"] = bool(self.nd.get_song(song.id).starred)
         np["follow_on"] = self.follow_on
@@ -82,3 +90,8 @@ class Player:
             return False
         self.nd.star([song_id])
         return True
+
+    def star_current(self) -> None:
+        np = self.sonos.now_playing()
+        if np and 0 <= np["index"] < len(self.songs):
+            self.toggle_star(self.songs[np["index"]].id)

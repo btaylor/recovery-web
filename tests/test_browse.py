@@ -42,7 +42,7 @@ def test_rail_is_capped_but_sheet_lists_every_genre_as_plain_links(client):
     assert html.count('class="chip"') == RAIL + 0  # rail chips ("All" only shows once filtered)
     assert html.count('class="sheet__row"') == RAIL + 50
     assert f"⌄ {RAIL + 50}" in html
-    sheet = html[html.index('id="genres"'):]
+    sheet = html[html.index('id="genres"'):html.index("<footer")]
     assert "hx-get" not in sheet  # 700 htmx-enabled rows made the page crawl
 
 

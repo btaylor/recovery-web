@@ -1,0 +1,34 @@
+<div id="np-top" hx-get="/now/top" hx-trigger="refresh from:body, every 2s" hx-swap="outerHTML">
+  {% if st and st.title %}
+  <div class="np__where">{{ st.source or "Now playing" }}{% if st.of %} · {{ st.of[0] }} of {{ st.of[1] }}{% elif st.source %} · mix{% endif %}</div>
+  <div class="np__art">
+    {% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=600" alt="">{% endif %}
+    {% if st.handoff %}
+    <div class="glass banner">
+      <small>Up next · in 0:{{ "%02d"|format(st.handoff["in"]) }}</small>
+      <div><span>Mix from <b>{{ st.source }}</b></span>
+        <button hx-post="/now/follow-on" hx-swap="none">stop after</button></div>
+    </div>
+    {% endif %}
+  </div>
+  <h2 class="np__title">{{ st.title }}</h2>
+  <div class="np__sub">{{ st.artist }}{% if st.album %} — {{ st.album }}{% endif %}</div>
+  <div class="bar"><i style="width: {{ st.pct or 0 }}%"></i></div>
+  <div class="times"><span>{{ st.position|clock }}</span><span>{{ st.duration|clock }}</span></div>
+  <div class="transport">
+    {% if st.song %}<button class="heart{% if st.starred %} on{% endif %}" hx-post="/star" hx-swap="none" aria-label="Favourite">{{ "♥" if st.starred else "♡" }}</button>{% endif %}
+    <button hx-post="/transport/prev" hx-swap="none" aria-label="Previous">⏮</button>
+    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{{ "⏸" if st.state == "PLAYING" else "▶" }}</button>
+    <button hx-post="/transport/next" hx-swap="none" aria-label="Next">⏭</button>
+  </div>
+  {% if st.source %}
+  <div class="follow">
+    <span><small>After this</small>{% if st.follow_on %}Mix from {{ st.source }}{% else %}Stop{% endif %}</span>
+    <button class="switch{% if st.follow_on %} on{% endif %}" role="switch" aria-checked="{{ 'true' if st.follow_on else 'false' }}"
+            hx-post="/now/follow-on" hx-swap="none"><i></i></button>
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="empty">Nothing playing.</p>
+  {% endif %}
+</div>

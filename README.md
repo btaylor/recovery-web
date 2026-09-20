@@ -51,3 +51,7 @@ Or: `docker compose up --build`.
 - Album / playlist detail is a panel (`#detail`) swapped in over the wall, so the wall's scroll position
   survives. `POST /play/<album|playlist>/<id>?start=N` plays (tapping a track = `start`), `POST /group`
   picks the room, `POST /follow-on` flips what the *next* play does after the source ends.
+- Mini bar (`/player`) and now-playing (`/now`) poll themselves with htmx (2–3s) and refresh instantly
+  when an action answers with `HX-Trigger: refresh`. The mixer (`/mixer`) is not polled, so sliders
+  aren't disturbed. Master volume uses Sonos group volume (proportional). The first room anchors the group.
+- Desktop shortcuts (`static/js/keys.js`): space play/pause, ←/→ previous/next, +/- volume.

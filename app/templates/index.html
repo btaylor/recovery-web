@@ -31,12 +31,7 @@
   {% endfor %}
 </div>
 
-<footer class="glass player">
-  <div class="player__art"></div>
-  <div class="player__meta">
-    <div class="player__title">Nothing playing</div>
-    <div class="player__sub">House Music</div>
-  </div>
-</footer>
+<footer id="player" class="glass player" hx-get="/player" hx-trigger="load" hx-swap="outerHTML"></footer>
 <script src="{{ url_for('static', filename='js/peek.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/keys.js') }}" defer></script>
 {% endblock %}
