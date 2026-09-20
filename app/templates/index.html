@@ -13,7 +13,7 @@
   <span id="current" class="chip chip--current">{{ current }}</span>
   <nav class="rail" aria-label="Genres">
     {% if current != "All" %}{{ chip("All", "") }}{% endif %}
-    {% for g in genres %}{{ chip(g.value, g.value) }}{% endfor %}
+    {% for g in genres[:rail] %}{{ chip(g.value, g.value) }}{% endfor %}
   </nav>
   <input id="q" class="search" type="search" name="q" value="{{ q }}" placeholder="⌕" aria-label="Search albums"
          hx-get="/albums" hx-target="#wall" hx-trigger="input changed delay:300ms, search"
@@ -21,10 +21,10 @@
   <button class="chip chip--all" popovertarget="genres">⌄ {{ genres|length }}</button>
 </header>
 
-<div id="genres" popover class="glass sheet" onclick="if(event.target.closest('a'))this.hidePopover()">
+<div id="genres" popover class="glass sheet">
   <h2>All genres</h2>
   {% for g in genres %}
-  <div class="sheet__row">{{ chip(g.value, g.value) }}<span>{{ g.album_count }} albums</span></div>
+  <a class="sheet__row" href="/?genre={{ g.value|urlencode }}">{{ g.value }}<span>{{ g.album_count }} albums</span></a>
   {% endfor %}
 </div>
 

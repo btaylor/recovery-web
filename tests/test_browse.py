@@ -33,6 +33,19 @@ def test_index_renders_wall_genres_by_size_and_hides_empty(client):
     nd.get_album_list2.assert_called_with("alphabeticalByArtist", size=PAGE, offset=0)
 
 
+def test_rail_is_capped_but_sheet_lists_every_genre_as_plain_links(client):
+    from app.routes import RAIL
+
+    c, nd = client
+    nd.get_genres.return_value = [NS(value=f"G{i}", album_count=1000 - i) for i in range(RAIL + 50)]
+    html = c.get("/").text
+    assert html.count('class="chip"') == RAIL + 0  # rail chips ("All" only shows once filtered)
+    assert html.count('class="sheet__row"') == RAIL + 50
+    assert f"⌄ {RAIL + 50}" in html
+    sheet = html[html.index('id="genres"'):]
+    assert "hx-get" not in sheet  # 700 htmx-enabled rows made the page crawl
+
+
 def test_full_page_has_infinite_scroll_sentinel(client):
     c, _ = client
     assert f'hx-get="/albums?offset={PAGE}"' in c.get("/").text

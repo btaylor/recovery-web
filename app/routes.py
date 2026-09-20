@@ -5,6 +5,7 @@ from . import navidrome
 bp = Blueprint("main", __name__)
 
 PAGE = 48  # a multiple of both wall widths (3 phone, 8 desktop) so rows stay full
+RAIL = 15  # genres shown as chips; the rest are in the "all genres" sheet
 
 
 def _nd():
@@ -26,7 +27,7 @@ def _albums(genre: str, q: str, offset: int):
 @bp.get("/")
 def index():
     genre, q = request.args.get("genre", ""), request.args.get("q", "")
-    return render_template("index.html", genres=_genres(), q=q, genre=genre,
+    return render_template("index.html", genres=_genres(), rail=RAIL, q=q, genre=genre,
                            current=q or genre or "All", **_page(genre, q, 0))
 
 
