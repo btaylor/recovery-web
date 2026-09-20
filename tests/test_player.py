@@ -8,7 +8,7 @@ from app.player import Player
 
 def song(i, genre="Jazz", starred=None):
     return NS(id=f"s{i}", title=f"T{i}", artist="A", album="Al", genre=genre,
-              content_type="audio/mpeg", starred=starred)
+              content_type="audio/mpeg", duration=200, starred=starred)
 
 
 ALBUM = [song(1), song(2), song(3)]

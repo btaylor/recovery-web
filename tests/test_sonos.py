@@ -57,7 +57,7 @@ def test_no_online_members_returns_none(tmp_path):
 def test_play_songs_replaces_queue_and_starts_at_index(tmp_path):
     son, s = make(tmp_path, "Kitchen")
     s["Kitchen"].group.members = {s["Kitchen"]}
-    song = NS(title="Low Ceiling", artist="The Meridians", album="Blue Hour", content_type="audio/flac")
+    song = NS(title="Low Ceiling", artist="The Meridians", album="Blue Hour", content_type="audio/flac", duration=320)
     son.set_group(["Kitchen"])
     son.play_songs([("http://nd/stream?id=1", song)], start=0)
     k = s["Kitchen"]
@@ -66,4 +66,6 @@ def test_play_songs_replaces_queue_and_starts_at_index(tmp_path):
     assert items[0].title == "Low Ceiling"
     assert items[0].resources[0].uri == "http://nd/stream?id=1"
     assert "audio/flac" in items[0].resources[0].protocol_info
+    assert items[0].resources[0].duration == "0:05:20"
+    assert k.play_mode == "NORMAL"
     k.play_from_queue.assert_called_once_with(0)

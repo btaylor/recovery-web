@@ -3,6 +3,7 @@ volume (`speaker.volume`, and `coordinator.group.volume` for a proportional mast
 so use those directly. This adds only what the app needs on top: the persisted
 playback group and loading songs into the queue."""
 import json
+from datetime import timedelta
 from pathlib import Path
 
 import soco
@@ -55,6 +56,7 @@ class Sonos:
         """Replace the queue with (stream_url, song) pairs and play from index `start`."""
         coord = self.coordinator()
         coord.clear_queue()
+        coord.play_mode = "NORMAL"  # albums play in order, whatever the speaker was left on
         coord.add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])
         coord.play_from_queue(start)
 
@@ -88,5 +90,8 @@ def _didl(url: str, song) -> DidlMusicTrack:
     return DidlMusicTrack(
         title=song.title, parent_id="-1", item_id="-1",
         creator=song.artist or "", album=song.album or "",
-        resources=[DidlResource(uri=url, protocol_info=f"http-get:*:{mime}:*")],
+        resources=[DidlResource(
+            uri=url, protocol_info=f"http-get:*:{mime}:*",
+            duration=str(timedelta(seconds=song.duration or 0)),
+        )],
     )
