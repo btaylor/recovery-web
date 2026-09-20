@@ -1,0 +1,9 @@
+services:
+  house-music:
+    build: .
+    # Host networking so SoCo can discover Sonos speakers (SSDP multicast)
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

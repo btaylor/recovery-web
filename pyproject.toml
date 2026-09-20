@@ -1,0 +1,20 @@
+[project]
+name = "house-music"
+version = "0.1.0"
+description = "Album-centric Navidrome front-end that plays to Sonos via SoCo"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "requests>=2.31",
+    "soco>=0.30",
+    "gunicorn>=22.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
