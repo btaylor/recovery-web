@@ -4,9 +4,9 @@ from app import create_app
 from app.config import Config, ConfigError
 
 ENV = {
-    "NAVIDROME_URL": "http://nd.local:4533/",
-    "NAVIDROME_USER": "u",
-    "NAVIDROME_PASSWORD": "p",
+    "ND_URL": "http://nd.local:4533/",
+    "ND_USER": "u",
+    "ND_PASS": "p",
 }
 
 

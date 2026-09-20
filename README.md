@@ -9,9 +9,9 @@ Set in the environment (see `.env.example`):
 
 | Variable | Required | Notes |
 |---|---|---|
-| `NAVIDROME_URL` | yes | e.g. `http://navidrome.local:4533` |
-| `NAVIDROME_USER` | yes | |
-| `NAVIDROME_PASSWORD` | yes | |
+| `ND_URL` | yes | e.g. `http://navidrome.local:4533` |
+| `ND_USER` | yes | |
+| `ND_PASS` | yes | |
 | `STATE_DIR` | no | persisted speaker group / preferences (default `./data`) |
 | `PORT` | no | default 8000 |
 

@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 
-REQUIRED = ("NAVIDROME_URL", "NAVIDROME_USER", "NAVIDROME_PASSWORD")
+REQUIRED = ("ND_URL", "ND_USER", "ND_PASS")
 
 
 class ConfigError(RuntimeError):
@@ -24,8 +24,8 @@ class Config:
                 "Missing required environment variables: " + ", ".join(missing)
             )
         return cls(
-            navidrome_url=env["NAVIDROME_URL"].rstrip("/"),
-            navidrome_user=env["NAVIDROME_USER"],
-            navidrome_password=env["NAVIDROME_PASSWORD"],
+            navidrome_url=env["ND_URL"].rstrip("/"),
+            navidrome_user=env["ND_USER"],
+            navidrome_password=env["ND_PASS"],
             state_dir=env.get("STATE_DIR", "./data"),
         )
