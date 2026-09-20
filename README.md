@@ -38,3 +38,6 @@ Or: `docker compose up --build`.
 - `app/navidrome.py` – builds a [py-opensonic](https://pypi.org/project/py-opensonic/) `Connection`
   (available as `app.extensions["nd"]`), plus a stream-URL helper and a cover-art fetch.
 - `/cover/<id>?size=N` – cover-art proxy with browser caching.
+- `app/sonos.py` – SoCo wrapper: online speakers by room name, the persisted playback group
+  (`STATE_DIR/sonos.json`), and loading songs into the queue. Transport and volume use SoCo directly
+  (`coordinator.play()`, `speaker.volume`, `coordinator.group.volume` for the proportional master).
