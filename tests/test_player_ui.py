@@ -35,6 +35,9 @@ def test_mini_bar_shows_track_room_and_transport(ctx):
     assert html.count('hx-get="/now"') == 2         # cover + title open now-playing
     assert 'class="heart on"' in html and "⏸" in html
     assert 'hx-trigger="refresh from:body, every 3s"' in html
+    # The bar swaps itself with outerHTML; its buttons must not inherit that, or opening a panel
+    # replaces #detail itself and the close handlers (getElementById("detail")) find nothing.
+    assert 'hx-disinherit="hx-swap"' in html
 
 
 def test_mini_bar_idle_and_paused(ctx):

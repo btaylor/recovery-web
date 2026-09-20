@@ -130,7 +130,7 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 @media (min-width: 900px) { .search { width: 180px; text-align: left; padding: 5px 12px; } }
 .sheet { inset: auto 0 0 0; margin: 0 auto; max-width: 560px; max-height: 70vh; overflow-y: auto; flex-direction: column;
   align-items: stretch; gap: 0; border-radius: 22px 22px 0 0; padding: 18px; color: var(--text); }
-.sheet:not(:popover-open) { display: none; }  /* .glass sets display:flex, which would defeat popover's hidden state */
+.sheet[popover]:not(:popover-open) { display: none; }  /* .glass sets display:flex, which would defeat popover's hidden state */
 .sheet::backdrop { background: rgba(0, 0, 0, .5); }
 .sheet h2 { margin: 0 0 12px; font-size: 19px; }
 .sheet__row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: .5px solid var(--glass-border); color: var(--text); text-decoration: none; font-size: 15px; }
@@ -186,7 +186,9 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .player__art { display: block; overflow: hidden; }
 .player__art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .player__title { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
-.player__sub { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player__sub { display: flex; gap: 4px; font-size: 12px; color: var(--text-2); white-space: nowrap; min-width: 0; }
+.player__sub .artist { overflow: hidden; text-overflow: ellipsis; min-width: 0; }  /* only the artist truncates; the room stays tappable */
+.player__sub .dot, .player__sub .room { flex: none; }
 .room { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; font-size: 12px; }
 .transport { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .transport--mini { flex: none; gap: 14px; font-size: 15px; }
