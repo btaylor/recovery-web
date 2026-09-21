@@ -57,7 +57,9 @@ Run a single worker (the Dockerfile does): the player remembers what it queued i
 ## Using it
 
 - **Wall:** genre chips scroll sideways; "⌄ N" lists every genre with album counts; ⌕ searches.
-  Long-press (or hover on desktop) a cover to see its title.
+  Long-press (or hover on desktop) a cover to see its title. The "All" wall is a fresh random shuffle
+  every time the page loads (Navidrome's `random` list; genre views keep Navidrome's own order).
+  Scrolling far can occasionally repeat an album, because the API doesn't define paging for `random`.
 - **Album / playlist:** opens as a panel over the wall, so your scroll position is kept.
   "Then: mix from this album — change" sets what happens after it ends, for the next play.
 - **Rooms:** pick a room in the album panel, or tap the room name in the mini bar to open the mixer.

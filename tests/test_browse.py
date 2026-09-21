@@ -31,7 +31,7 @@ def test_index_renders_wall_genres_by_size_and_hides_empty(client):
     assert html.count('class="tile"') == PAGE
     assert html.index("Jazz") < html.index("Ambient") and "Empty" not in html
     assert "9 albums" in html and "/cover/c0?size=300" in html
-    nd.get_album_list2.assert_called_with("alphabeticalByArtist", size=PAGE, offset=0)
+    nd.get_album_list2.assert_called_with("random", size=PAGE, offset=0)  # a fresh shuffle each load
 
 
 def test_one_off_genres_are_hidden_from_rail_and_sheet_with_a_note(client):

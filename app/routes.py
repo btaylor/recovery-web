@@ -48,7 +48,9 @@ def _albums(genre: str, q: str, offset: int):
         return _nd().search3(q, artist_count=0, song_count=0, album_count=PAGE, album_offset=offset).album or []
     if genre:
         return _nd().get_album_list2("byGenre", size=PAGE, offset=offset, genre=genre)
-    return _nd().get_album_list2("alphabeticalByArtist", size=PAGE, offset=offset)
+    # The "All" wall is a fresh shuffle each load. The API doesn't define paging for `random`, so later
+    # pages are new draws and can occasionally repeat an album from an earlier page.
+    return _nd().get_album_list2("random", size=PAGE, offset=offset)
 
 
 @bp.get("/")
