@@ -3,12 +3,21 @@ volume (`speaker.volume`, and `coordinator.group.volume` for a proportional mast
 so use those directly. This adds only what the app needs on top: the persisted
 playback group and loading songs into the queue."""
 import json
+import time
 from datetime import timedelta
 from pathlib import Path
 
+import requests
 import soco
+from soco import config as soco_config
 from soco.exceptions import SoCoException
 from soco.data_structures import DidlMusicTrack, DidlResource
+
+# SoCo waits 20s by default; with pollers hitting speakers every 2-3s, one vanished
+# speaker would stall the whole UI. Speakers on a LAN answer in milliseconds.
+soco_config.REQUEST_TIMEOUT = 5
+
+REDISCOVER_AFTER = 10  # seconds to wait before searching again when no speaker was found
 
 
 class NoRoom(RuntimeError):
@@ -19,14 +28,23 @@ class Sonos:
     def __init__(self, state_dir: str):
         self._state = Path(state_dir) / "sonos.json"
         self._any = None
+        self._next_search = 0.0
 
     def zones(self) -> dict[str, soco.SoCo]:
         """Online speakers by room name. Offline ones are simply absent."""
-        if self._any is None:
-            self._any = soco.discovery.any_soco()
+        for _ in range(2):
             if self._any is None:
-                return {}
-        return {z.player_name: z for z in self._any.visible_zones}
+                if time.monotonic() < self._next_search:
+                    return {}
+                self._any = soco.discovery.any_soco()
+                if self._any is None:
+                    self._next_search = time.monotonic() + REDISCOVER_AFTER
+                    return {}
+            try:
+                return {z.player_name: z for z in self._any.visible_zones}
+            except (requests.RequestException, SoCoException):
+                self._any = None  # the speaker we asked went away; find another one
+        return {}
 
     @property
     def group_names(self) -> list[str]:

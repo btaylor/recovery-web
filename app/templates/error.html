@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}House Music · {{ message }}{% endblock %}
+{% block content %}
+<main class="fatal">
+  <h1>{{ message }}</h1>
+  {% if hint %}<p>{{ hint }}</p>{% endif %}
+  <p><a class="chip chip--current" href="">Try again</a></p>
+</main>
+{% endblock %}

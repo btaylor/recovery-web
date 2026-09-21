@@ -1,7 +1,9 @@
+import requests
 from flask import Blueprint, Response, abort, current_app, render_template, request
-from libopensonic.errors import SonicError
+from libopensonic.errors import AuthError, CredentialError, SonicError
 
 from . import navidrome
+from .errors import NAVIDROME, SPEAKER
 from .sonos import NoRoom
 
 bp = Blueprint("main", __name__)
@@ -12,6 +14,24 @@ RAIL = 15  # genres shown as chips; the rest are in the "all genres" sheet
 
 def _nd():
     return current_app.extensions["nd"]
+
+
+def _fetch(get, item_id):
+    """Look up an album/playlist: 404 if Navidrome doesn't have it, but let a bad login through."""
+    try:
+        return get(item_id)
+    except (AuthError, CredentialError):
+        raise
+    except SonicError:
+        abort(404)
+
+
+def _poll(fn, default=None):
+    """For the pollers: they must never fail, or htmx stops updating them. Trouble shows as idle."""
+    try:
+        return fn()
+    except (*SPEAKER, *NAVIDROME):
+        return default
 
 
 def _genres():
@@ -59,20 +79,14 @@ def _detail(kind, item, songs, sub, meta):
 
 @bp.get("/album/<album_id>")
 def album(album_id):
-    try:
-        a = _nd().get_album(album_id)
-    except SonicError:
-        abort(404)
+    a = _fetch(_nd().get_album, album_id)
     meta = " · ".join(str(x) for x in (a.year, a.genre, f"{a.song_count} tracks", f"{round(a.duration / 60)} min") if x)
     return _detail("album", a, a.song or [], a.artist, meta)
 
 
 @bp.get("/playlist/<playlist_id>")
 def playlist(playlist_id):
-    try:
-        p = _nd().get_playlist(playlist_id)
-    except SonicError:
-        abort(404)
+    p = _fetch(_nd().get_playlist, playlist_id)
     return _detail("playlist", p, p.entry or [], "Playlist", f"{p.song_count} tracks · {round((p.duration or 0) / 60)} min")
 
 
@@ -85,7 +99,7 @@ def play(kind, item_id):
     except KeyError:
         abort(404)
     except NoRoom as e:
-        return str(e), 409
+        return str(e), 409, {"Content-Type": "text/plain; charset=utf-8"}  # shown as a toast
     return "", 204
 
 
@@ -142,8 +156,8 @@ def room_volume(room):
 
 @bp.get("/player")
 def player_bar():
-    return render_template("_player.html", st=current_app.extensions["player"].status(),
-                           room=current_app.extensions["sonos"].label())
+    player, sonos = current_app.extensions["player"], current_app.extensions["sonos"]
+    return render_template("_player.html", st=_poll(player.status), room=_poll(sonos.label, ""))
 
 
 @bp.get("/now")
@@ -153,7 +167,7 @@ def now():
 
 @bp.get("/now/top")
 def now_top():
-    return render_template("_np_top.html", st=current_app.extensions["player"].status())
+    return render_template("_np_top.html", st=_poll(current_app.extensions["player"].status))
 
 
 @bp.get("/speakers")
@@ -218,9 +232,12 @@ def healthz():
 
 @bp.get("/cover/<cover_id>")
 def cover(cover_id):
-    r = navidrome.cover_art(
-        current_app.extensions["hm_config"], cover_id, request.args.get("size", type=int)
-    )
+    try:
+        r = navidrome.cover_art(
+            current_app.extensions["hm_config"], cover_id, request.args.get("size", type=int)
+        )
+    except requests.RequestException:
+        abort(502)  # Navidrome unreachable: the <img> just doesn't load
     if not r.ok or not r.headers.get("Content-Type", "").startswith("image/"):
         abort(404)
     # Covers rarely change; let the browser cache the wall.

@@ -8,3 +8,6 @@ data/
 .cache/
 .env.*
 !.env.example
+*.swp
+*.swo
+.DS_Store

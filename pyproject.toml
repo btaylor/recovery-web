@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "flask>=3.0",
     "requests>=2.31",
+    "aiohttp>=3.9",  # imported directly for error handling (also a py-opensonic dependency)
     "py-opensonic>=10.4",
     "soco>=0.30",
     "gunicorn>=22.0",
@@ -16,6 +17,10 @@ dev = ["pytest>=8.0"]
 
 [tool.setuptools]
 packages = ["app"]
+
+# Without this the installed package (and the Docker image) has no templates, CSS or JS.
+[tool.setuptools.package-data]
+app = ["templates/*.html", "static/css/*", "static/js/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

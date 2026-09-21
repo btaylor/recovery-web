@@ -11,7 +11,7 @@
       <div class="panel__meta">{{ meta }}</div>
       <div class="panel__actions">
         <button class="play" hx-post="/play/{{ kind }}/{{ item.id }}" hx-swap="none"
-                hx-on::after-request="this.textContent = event.detail.successful ? '▶ Playing' : (event.detail.xhr.responseText || 'Failed')">▶ Play</button>
+                hx-on::after-request="if (event.detail.successful) this.textContent = '▶ Playing'">▶ Play</button>
         <select name="room" aria-label="Room" hx-post="/group" hx-swap="none" hx-trigger="change">
           {% if not room %}<option value="" selected disabled>Choose room…</option>{% endif %}
           {% for r in rooms %}<option{% if r == room %} selected{% endif %}>{{ r }}</option>{% endfor %}

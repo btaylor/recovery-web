@@ -10,5 +10,7 @@
 </head>
 <body>
   {% block content %}{% endblock %}
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="{{ url_for('static', filename='js/toast.js') }}" defer></script>
 </body>
 </html>

@@ -1,57 +1,100 @@
 # House Music
 
-Album-centric Navidrome front-end that plays to the home's Sonos speakers via SoCo.
-Flask + htmx. Playback is UPnP-only; there is no local audio.
+An album-first web player for a [Navidrome](https://www.navidrome.org/) library that plays to the
+home's Sonos speakers. Flask + htmx + [SoCo](https://github.com/SoCo/SoCo). There is no local audio:
+the browser is only a remote control, and the speakers fetch the music from Navidrome themselves.
+
+- Edge-to-edge cover wall with a genre rail, search and playlists ("▤ Lists").
+- Tap an album to play it start to finish; when it ends a mix seeded from its last song continues
+  (`getSimilarSongs2`, falling back to the same genre). Tap a track to start the album from there.
+- Mini player, now-playing screen, and a mixer with a slider per room plus a proportional master.
+- ♥ favourites are stored in Navidrome. The room group survives restarts; offline speakers are hidden.
 
 ## Configuration
 
-Set in the environment (see `.env.example`):
+Set these in the environment (copy `.env.example` to `.env`):
 
 | Variable | Required | Notes |
 |---|---|---|
 | `ND_URL` | yes | e.g. `http://navidrome.local:4533` |
 | `ND_USER` | yes | |
 | `ND_PASS` | yes | |
-| `STATE_DIR` | no | persisted speaker group / preferences (default `./data`) |
-| `PORT` | no | default 8000 |
+| `STATE_DIR` | no | where the playback group is saved (default `./data`, `/data` in Docker) |
+| `PORT` | no | default 8000 (Docker) |
 
-The app exits at startup if a required variable is missing.
+The app refuses to start if a required variable is missing.
 
-## Networking
+## Networking (read this first)
 
-The host must be on the same LAN as the Sonos speakers (SSDP discovery), and
-Navidrome must be reachable **from the speakers**, since they fetch audio directly.
-`docker-compose.yml` uses `network_mode: host` for this.
+- **The app must be on the same LAN as the speakers.** SoCo finds them with SSDP multicast.
+- **Navidrome must be reachable from the speakers**, not just from the app: Sonos downloads each
+  track from the stream URL itself. Use a hostname or IP the speakers can resolve, in `ND_URL`.
+- The stream URLs carry a Subsonic token and salt (never the password) in the query string,
+  because Sonos can't send auth headers.
+- **Docker:** `docker-compose.yml` uses `network_mode: host` so multicast works. That works on a
+  Linux host or NAS. Docker Desktop on macOS/Windows runs containers in a VM and does not put them on
+  your LAN, so run the app natively there.
+- **There is no login.** Anyone who can reach the port can control your speakers. Keep it on the LAN.
 
 ## Run
+
+Natively:
 
     python -m venv .venv && . .venv/bin/activate
     pip install -e '.[dev]'
     set -a; . ./.env; set +a
     flask --app app.wsgi run --port 8000
-    pytest
 
-Or: `docker compose up --build`.
+With Docker (Linux host):
+
+    cp .env.example .env   # then edit it
+    docker compose up --build -d
+
+Then open `http://<host>:8000`. Tests: `pytest`.
+
+Run a single worker (the Dockerfile does): the player remembers what it queued in memory.
+
+## Using it
+
+- **Wall:** genre chips scroll sideways; "⌄ N" lists every genre with album counts; ⌕ searches.
+  Long-press (or hover on desktop) a cover to see its title.
+- **Album / playlist:** opens as a panel over the wall, so your scroll position is kept.
+  "Then: mix from this album — change" sets what happens after it ends, for the next play.
+- **Rooms:** pick a room in the album panel, or tap the room name in the mini bar to open the mixer.
+  Tick other rooms to bring them into the group (they join mid-track). The first room anchors the group.
+- **Now playing:** tap the mini bar. The "After this album" switch changes the mix for the current queue;
+  on the last track a banner counts down to the mix and offers "stop after".
+- **Desktop keys:** space play/pause, ←/→ previous/next, `+`/`-` volume. (Browsers can't see hardware
+  volume keys, so those aren't supported.)
+
+## When things go wrong
+
+- **Navidrome unreachable or wrong login:** a full page says so (with a hint) on navigation; failed
+  actions show a short toast. The mini bar and now-playing keep polling and show "Nothing playing"
+  until things recover. Covers just don't load.
+- **A speaker vanishes:** it disappears from the room list. Actions that reach it show
+  "Can't reach the speaker." Speaker requests time out after 5 seconds (SoCo's default is 20).
+  If no speaker is found the app searches again at most every 10 seconds.
+- **No room chosen:** Play says "Choose a room first".
+
+## Known limits
+
+- The "then: mix / stop" default resets to "mix" when the app restarts.
+- After a restart the app no longer knows what it queued, so the now-playing cover, ♥ and handoff banner
+  come back on the next play. Sonos keeps playing meanwhile.
+- Joining a room that is grouped in the Sonos app (e.g. a home-theatre set) pulls it out of that group.
+- The genre sheet lists every genre in Navidrome, including one-off tags.
 
 ## Code layout
 
-- `app/navidrome.py` – builds a [py-opensonic](https://pypi.org/project/py-opensonic/) `Connection`
-  (available as `app.extensions["nd"]`), plus a stream-URL helper and a cover-art fetch.
-- `/cover/<id>?size=N` – cover-art proxy with browser caching.
-- `app/sonos.py` – SoCo wrapper: online speakers by room name, the persisted playback group
-  (`STATE_DIR/sonos.json`), and loading songs into the queue. Transport and volume use SoCo directly
-  (`coordinator.play()`, `speaker.volume`, `coordinator.group.volume` for the proportional master).
-- `app/player.py` – playback orchestration (`app.extensions["player"]`): play an album/playlist with the
-  mix from `getSimilarSongs2` (genre fallback) appended up front for a gapless handoff; "stop after" removes
-  it; `status()` adds the current song, ♥ state and the ~30s handoff banner; `toggle_star()`.
-  The follow-on setting is in-memory (resets on restart).
-- `app/routes.py` + `templates/` – browse UI. `/` renders the wall; `/albums` returns wall fragments
-  (genre / search / `offset` paging) that htmx swaps in, with infinite scroll via `hx-trigger="revealed"`.
-  Genre chips, the "⌄ N" sheet (HTML `popover`, no JS) and search all drive the same fragment.
-- Album / playlist detail is a panel (`#detail`) swapped in over the wall, so the wall's scroll position
-  survives. `POST /play/<album|playlist>/<id>?start=N` plays (tapping a track = `start`), `POST /group`
-  picks the room, `POST /follow-on` flips what the *next* play does after the source ends.
-- Mini bar (`/player`) and now-playing (`/now`) poll themselves with htmx (2–3s) and refresh instantly
-  when an action answers with `HX-Trigger: refresh`. The mixer (`/mixer`) is not polled, so sliders
-  aren't disturbed. Master volume uses Sonos group volume (proportional). The first room anchors the group.
-- Desktop shortcuts (`static/js/keys.js`): space play/pause, ←/→ previous/next, +/- volume.
+- `app/config.py` – environment settings.
+- `app/navidrome.py` – builds a [py-opensonic](https://pypi.org/project/py-opensonic/) connection
+  (`app.extensions["nd"]`), plus stream-URL and cover-art helpers.
+- `app/sonos.py` – SoCo wrapper: online speakers by room name, the saved playback group
+  (`STATE_DIR/sonos.json`), the mixer view, and loading songs into the queue. Transport and volume use
+  SoCo directly.
+- `app/player.py` – playback orchestration: album/playlist + mix, "stop after", status for the pollers, ♥.
+- `app/routes.py`, `app/templates/`, `app/static/` – the UI. Pages are server-rendered; htmx swaps
+  fragments (`/albums`, `/album/<id>`, `/player`, `/now/top`, `/mixer`, ...).
+- `app/errors.py` – maps library exceptions to what the user sees.
+- `tests/` – unit tests with mocked Navidrome and Sonos.

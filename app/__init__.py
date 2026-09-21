@@ -13,7 +13,9 @@ def create_app(config: Config | None = None) -> Flask:
     app.extensions["sonos"] = Sonos(cfg.state_dir)
     app.extensions["player"] = Player(app.extensions["nd"], app.extensions["sonos"])
 
+    from . import errors
     from .routes import bp
 
+    errors.register(app)
     app.register_blueprint(bp)
     return app
