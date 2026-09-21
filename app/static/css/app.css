@@ -208,7 +208,8 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .np__where { pointer-events: none; text-align: center; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); margin-top: -30px; }
 .np__art { position: relative; aspect-ratio: 1; max-height: 340px; margin: 14px auto 0; border-radius: 14px; overflow: hidden; background: var(--art-placeholder); box-shadow: 0 18px 44px rgba(0, 0, 0, .5); }
 .np__art > img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.np__title { font-size: 22px; letter-spacing: -.02em; margin: 16px 0 0; }
+/* `.panel .` so this beats `.panel h2 { margin: 0 }`; without it the margin never applied */
+.panel .np__title { font-size: 22px; letter-spacing: -.02em; margin: calc(16px + 4pt) 0 0; }
 .np__sub { font-size: 14px; color: var(--text-2); }
 .bar { height: 5px; border-radius: 3px; margin-top: 14px; background: var(--chip-bg); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--text); transition: width 1s linear; }
