@@ -83,7 +83,9 @@ Run a single worker (the Dockerfile does): the player remembers what it queued i
 - After a restart the app no longer knows what it queued, so the now-playing cover, ♥ and handoff banner
   come back on the next play. Sonos keeps playing meanwhile.
 - Joining a room that is grouped in the Sonos app (e.g. a home-theatre set) pulls it out of that group.
-- The genre sheet lists every genre in Navidrome, including one-off tags.
+- Genres with fewer than 3 albums (`MIN_GENRE_ALBUMS` in `app/routes.py`) are left out of the genre rail
+  and sheet, with a note in the sheet saying how many. Their albums still appear under "All" and in search.
+- Genre names are matched exactly, so "pop" and "Pop" are separate genres.
 
 ## Code layout
 

@@ -18,8 +18,9 @@ def album(i):
 def client():
     app = create_app(Config.from_env(ENV))
     nd = app.extensions["nd"] = MagicMock()
-    nd.get_genres.return_value = [NS(value="Ambient", album_count=2), NS(value="Jazz", album_count=9),
-                                  NS(value="Empty", album_count=0)]
+    nd.get_genres.return_value = [NS(value="Ambient", album_count=5), NS(value="Jazz", album_count=9),
+                                  NS(value="Empty", album_count=0),
+                                  NS(value="OneOff", album_count=1), NS(value="Rare", album_count=2)]
     nd.get_album_list2.side_effect = lambda *a, **k: [album(i) for i in range(k["size"])]
     return app.test_client(), nd
 
@@ -31,6 +32,30 @@ def test_index_renders_wall_genres_by_size_and_hides_empty(client):
     assert html.index("Jazz") < html.index("Ambient") and "Empty" not in html
     assert "9 albums" in html and "/cover/c0?size=300" in html
     nd.get_album_list2.assert_called_with("alphabeticalByArtist", size=PAGE, offset=0)
+
+
+def test_one_off_genres_are_hidden_from_rail_and_sheet_with_a_note(client):
+    c, nd = client
+    html = c.get("/").text
+    assert "OneOff" not in html and ">Rare<" not in html          # under MIN_GENRE_ALBUMS
+    assert "Ambient" in html and "Jazz" in html
+    assert "⌄ 2" in html                                          # only the two listed genres
+    assert "2 rarer genres (under 3 albums) not shown." in html   # the empty genre isn't counted
+    nd.get_genres.assert_called_once()                            # one call, not one per genre
+
+
+def test_threshold_is_inclusive_and_note_is_singular(client):
+    c, nd = client
+    nd.get_genres.return_value = [NS(value="Exactly3", album_count=3), NS(value="Two", album_count=2)]
+    html = c.get("/").text
+    assert "Exactly3" in html and ">Two<" not in html
+    assert "1 rarer genre (under 3 albums) not shown." in html
+
+
+def test_no_note_when_nothing_is_hidden(client):
+    c, nd = client
+    nd.get_genres.return_value = [NS(value="Jazz", album_count=9)]
+    assert "rarer genre" not in c.get("/").text
 
 
 def test_rail_is_capped_but_sheet_lists_every_genre_as_plain_links(client):

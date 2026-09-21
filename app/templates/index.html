@@ -29,6 +29,7 @@
   {% for g in genres %}
   <a class="sheet__row" href="/?genre={{ g.value|urlencode }}">{{ g.value }}<span>{{ g.album_count }} albums</span></a>
   {% endfor %}
+  {% if hidden %}<p class="sheet__note">{{ hidden }} rarer genre{{ "s" if hidden != 1 }} (under {{ min_albums }} albums) not shown.</p>{% endif %}
 </div>
 
 <footer id="player" class="glass player" hx-get="/player" hx-trigger="load" hx-swap="outerHTML"></footer>

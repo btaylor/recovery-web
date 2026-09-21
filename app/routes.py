@@ -10,6 +10,7 @@ bp = Blueprint("main", __name__)
 
 PAGE = 48  # a multiple of both wall widths (3 phone, 8 desktop) so rows stay full
 RAIL = 15  # genres shown as chips; the rest are in the "all genres" sheet
+MIN_GENRE_ALBUMS = 3  # genres with fewer albums (one-off tags) are left out of the rail and sheet
 
 
 def _nd():
@@ -35,7 +36,11 @@ def _poll(fn, default=None):
 
 
 def _genres():
-    return sorted((g for g in _nd().get_genres() if g.album_count), key=lambda g: -g.album_count)
+    """(genres worth listing, biggest first; how many rare ones were left out).
+    getGenres already carries each genre's album count, so this is one call, not one per genre."""
+    every = [g for g in _nd().get_genres() if g.album_count]
+    shown = sorted((g for g in every if g.album_count >= MIN_GENRE_ALBUMS), key=lambda g: -g.album_count)
+    return shown, len(every) - len(shown)
 
 
 def _albums(genre: str, q: str, offset: int):
@@ -49,10 +54,12 @@ def _albums(genre: str, q: str, offset: int):
 @bp.get("/")
 def index():
     genre, q = request.args.get("genre", ""), request.args.get("q", "")
+    genres, hidden = _genres()
+    chrome = {"genres": genres, "hidden": hidden, "rail": RAIL, "min_albums": MIN_GENRE_ALBUMS}
     if request.args.get("lists"):
-        return render_template("index.html", genres=_genres(), rail=RAIL, q="", genre="", current="Lists",
+        return render_template("index.html", **chrome, q="", genre="", current="Lists",
                                playlists=_nd().get_playlists(), albums=[], next=None)
-    return render_template("index.html", genres=_genres(), rail=RAIL, q=q, genre=genre,
+    return render_template("index.html", **chrome, q=q, genre=genre,
                            current=q or genre or "All", **_page(genre, q, 0))
 
 
