@@ -1,9 +1,17 @@
 services:
-  house-music:
-    build: .
-    # Host networking so SoCo can discover Sonos speakers (SSDP multicast)
+  recovery-web:
+    image: bradtaylorco/recovery-web:latest   # `docker compose pull` fetches this
+    build: .                                  # or `docker compose build` to build from source
+    container_name: recovery-web
+    # Host networking so SoCo can discover Sonos speakers (SSDP multicast).
+    # The app listens on PORT (default 8000) directly; `ports:` does nothing in this mode.
     network_mode: host
-    env_file: .env
+    env_file: .env          # ND_URL, ND_USER, ND_PASS, PORT (see .env.example)
     volumes:
-      - ./data:/data
+      # A named volume, not a folder next to this file: Docker sets it up writable, so it works
+      # whichever user the container runs as. (A ./data bind mount is often owned by root.)
+      - recovery-web-data:/data   # remembers the playback group across restarts
     restart: unless-stopped
+
+volumes:
+  recovery-web-data:

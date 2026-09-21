@@ -1,6 +1,6 @@
 [project]
 name = "house-music"
-version = "0.1.0"
+version = "0.1.1"
 description = "Album-centric Navidrome front-end that plays to Sonos via SoCo"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,7 +9,7 @@ dependencies = [
     "aiohttp>=3.9",  # imported directly for error handling (also a py-opensonic dependency)
     "py-opensonic>=10.4",
     "soco>=0.30",
-    "gunicorn>=22.0",
+    "gunicorn>=25.1",  # --no-control-socket (used by the Dockerfile) arrived in 25.1
 ]
 
 [project.optional-dependencies]

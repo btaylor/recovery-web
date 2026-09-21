@@ -33,7 +33,9 @@ The app refuses to start if a required variable is missing.
   because Sonos can't send auth headers.
 - **Docker:** `docker-compose.yml` uses `network_mode: host` so multicast works. That works on a
   Linux host or NAS. Docker Desktop on macOS/Windows runs containers in a VM and does not put them on
-  your LAN, so run the app natively there.
+  your LAN, so run the app natively there. Host networking also means the app takes a port on the host
+  itself (`PORT`, default 8000) and `ports:` in compose has no effect. If something already uses 8000 you'll
+  see `Address already in use` in `docker logs`; set another port, e.g. `PORT=8123` in `.env`.
 - **There is no login.** Anyone who can reach the port can control your speakers. Keep it on the LAN.
 
 ## Run
@@ -45,10 +47,13 @@ Natively:
     set -a; . ./.env; set +a
     flask --app app.wsgi run --port 8000
 
-With Docker (Linux host):
+With Docker (Linux host), using the published image (`linux/amd64` and `linux/arm64`):
 
     cp .env.example .env   # then edit it
-    docker compose up --build -d
+    docker compose pull && docker compose up -d
+
+To build from source instead: `docker compose up --build -d`. To update later, run the pull and up
+commands again.
 
 Then open `http://<host>:8000`. Tests: `pytest`.
 

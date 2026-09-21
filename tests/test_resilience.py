@@ -123,3 +123,16 @@ def test_zones_gives_up_after_one_retry(tmp_path, monkeypatch):
     son._any = Gone()
     monkeypatch.setattr("soco.discovery.any_soco", lambda: Gone())
     assert son.zones() == {}  # no exception, no infinite loop
+
+
+# --- Saved group: a state dir the app can't write (e.g. a volume owned by another user) ---------
+
+def test_unwritable_state_dir_only_loses_persistence(tmp_path, caplog):
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("x")                    # STATE_DIR below a file: it can never be created
+    son = Sonos(str(blocker / "data"))
+    son._any = NS(visible_zones=[])            # no speakers online, which is fine here
+    with caplog.at_level("WARNING"):
+        assert son.set_group(["Kitchen"]) is None   # no crash
+    assert son.group_names == ["Kitchen"]           # still remembered, in memory
+    assert "Can't save the playback group" in caplog.text and "STATE_DIR" in caplog.text

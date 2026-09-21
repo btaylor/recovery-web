@@ -3,6 +3,7 @@ volume (`speaker.volume`, and `coordinator.group.volume` for a proportional mast
 so use those directly. This adds only what the app needs on top: the persisted
 playback group and loading songs into the queue."""
 import json
+import logging
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -19,6 +20,8 @@ soco_config.REQUEST_TIMEOUT = 5
 
 REDISCOVER_AFTER = 10  # seconds to wait before searching again when no speaker was found
 
+log = logging.getLogger(__name__)
+
 
 class NoRoom(RuntimeError):
     """No online speaker in the playback group."""
@@ -29,6 +32,7 @@ class Sonos:
         self._state = Path(state_dir) / "sonos.json"
         self._any = None
         self._next_search = 0.0
+        self._names = None  # the group in memory; the file only exists to survive restarts
 
     def zones(self) -> dict[str, soco.SoCo]:
         """Online speakers by room name. Offline ones are simply absent."""
@@ -48,16 +52,27 @@ class Sonos:
 
     @property
     def group_names(self) -> list[str]:
+        if self._names is not None:
+            return self._names
         try:
             return json.loads(self._state.read_text())["group"]
         except (OSError, ValueError, KeyError):
             return []
 
+    def _save(self, names: list[str]) -> None:
+        self._names = list(names)
+        try:
+            self._state.parent.mkdir(parents=True, exist_ok=True)
+            self._state.write_text(json.dumps({"group": names}))
+        except OSError as e:
+            # Still works, it just won't survive a restart. Usually a volume owned by another user.
+            log.warning("Can't save the playback group to %s (%s). It will be forgotten when the "
+                        "app restarts; check the permissions of STATE_DIR.", self._state, e)
+
     def set_group(self, names: list[str]) -> soco.SoCo | None:
         """Make `names` the playback group (first online one coordinates) and persist it.
         Names that are offline are kept in the saved group but skipped for now."""
-        self._state.parent.mkdir(parents=True, exist_ok=True)
-        self._state.write_text(json.dumps({"group": names}))
+        self._save(names)
         zones = self.zones()
         members = [zones[n] for n in names if n in zones]
         if not members:
