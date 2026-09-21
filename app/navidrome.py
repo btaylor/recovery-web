@@ -20,7 +20,7 @@ def make_client(cfg: Config) -> Connection:
         username=cfg.navidrome_user,
         password=cfg.navidrome_password,
         port=u.port or (443 if u.scheme == "https" else 80),
-        app_name="house-music",
+        app_name="Play",
         use_get=True,
     )
 
@@ -39,7 +39,7 @@ def cover_art(cfg: Config, cover_id: str, size: int | None = None) -> requests.R
         "t": hashlib.md5((cfg.navidrome_password + salt).encode()).hexdigest(),
         "s": salt,
         "v": API_VERSION,
-        "c": "house-music",
+        "c": "Play",
         "id": cover_id,
     }
     if size:

@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, Response, abort, current_app, render_template, request
+from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request
 from libopensonic.errors import AuthError, CredentialError, SonicError
 
 from . import navidrome
@@ -237,6 +237,33 @@ def _page(genre, q, offset):
 @bp.get("/healthz")
 def healthz():
     return {"status": "ok"}
+
+
+# Installable web app ("Add to Home Screen" on iOS/iPadOS, "Add to Dock" in Safari on macOS 14+).
+# `display: standalone` is what makes iOS treat it as an app instead of a bookmark.
+MANIFEST = {
+    "id": "/",
+    "name": "Play",
+    "short_name": "Play",
+    "description": "Play your Navidrome library on the Sonos speakers at home.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#0b0b0d",
+    "theme_color": "#0b0b0d",
+    "icons": [
+        {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+        {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        {"src": "/static/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    ],
+}
+
+
+@bp.get("/manifest.webmanifest")
+def manifest():
+    resp = jsonify(MANIFEST)
+    resp.mimetype = "application/manifest+json"
+    return resp
 
 
 @bp.get("/cover/<cover_id>")

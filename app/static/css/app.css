@@ -51,7 +51,11 @@ body {
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;  /* as an installed app, no grey flash on tap */
 }
+/* No double-tap zoom or 300ms delay on controls when running standalone */
+a, button, input, select, .tile { touch-action: manipulation; }
 
 /* Edge-to-edge, gutterless cover wall */
 .wall {

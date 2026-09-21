@@ -1,4 +1,4 @@
-# House Music
+# Play
 
 An album-first web player for a [Navidrome](https://www.navidrome.org/) library that plays to the
 home's Sonos speakers. Flask + htmx + [SoCo](https://github.com/SoCo/SoCo). There is no local audio:
@@ -73,6 +73,17 @@ Run a single worker (the Dockerfile does): the player remembers what it queued i
   on the last track a banner counts down to the mix and offers "stop after".
 - **Desktop keys:** space play/pause, ←/→ previous/next, `+`/`-` volume. (Browsers can't see hardware
   volume keys, so those aren't supported.)
+
+## Install it as an app
+
+Play is an installable web app (it has a manifest and icons, and no service worker):
+
+- **iPhone / iPad:** open it in Safari, tap Share, then **Add to Home Screen**. It opens full-screen like an app.
+- **Mac:** open it in Safari (macOS 14 or later), then **File → Add to Dock**.
+
+Use an address that won't change (a fixed IP or a hostname): an installed app is tied to the address it
+was installed from. Plain `http://` on the LAN is fine for installing. It needs no HTTPS, but there is
+also no offline mode, since the app is only a remote control and needs the server.
 
 ## When things go wrong
 

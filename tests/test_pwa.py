@@ -1,0 +1,71 @@
+import struct
+import tomllib
+from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+
+from app import create_app
+from app.config import Config
+
+ENV = {"ND_URL": "http://nd:4533", "ND_USER": "u", "ND_PASS": "p"}
+ROOT = Path(__file__).resolve().parent.parent
+ICONS = ROOT / "app" / "static" / "icons"
+
+
+def png_size(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", f"{path.name} is not a PNG"
+    return struct.unpack(">II", data[16:24])  # width, height from the IHDR chunk
+
+
+@pytest.fixture
+def client():
+    app = create_app(Config.from_env(ENV))
+    nd = app.extensions["nd"] = MagicMock()
+    nd.get_genres.return_value = []
+    nd.get_album_list2.return_value = []
+    return app.test_client()
+
+
+def test_manifest_makes_it_an_installable_app_called_play(client):
+    r = client.get("/manifest.webmanifest")
+    m = r.get_json()
+    assert r.status_code == 200 and r.mimetype == "application/manifest+json"
+    assert m["name"] == "Play" and m["short_name"] == "Play"
+    assert m["display"] == "standalone"            # iOS treats "browser" as a bookmark, not an app
+    assert m["start_url"] == "/" and m["scope"] == "/"
+    assert m["background_color"] == m["theme_color"] == "#0b0b0d"
+
+
+def test_manifest_has_any_and_maskable_icons(client):
+    icons = client.get("/manifest.webmanifest").get_json()["icons"]
+    assert {i["sizes"] for i in icons} >= {"192x192", "512x512"}
+    assert {"any", "maskable"} <= {i["purpose"] for i in icons}
+    assert all(i["type"] == "image/png" and i["src"].startswith("/static/icons/") for i in icons)
+
+
+def test_every_icon_the_manifest_lists_exists_at_its_declared_size(client):
+    for icon in client.get("/manifest.webmanifest").get_json()["icons"]:
+        w, h = (int(n) for n in icon["sizes"].split("x"))
+        assert png_size(ICONS / Path(icon["src"]).name) == (w, h), icon["src"]
+
+
+def test_apple_touch_icon_is_180_square():
+    assert png_size(ICONS / "apple-touch-icon.png") == (180, 180)
+
+
+def test_icons_are_packaged_so_the_docker_image_has_them():
+    """Non-Python files only ship if package-data names them (the image had no templates once)."""
+    globs = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["setuptools"]["package-data"]["app"]
+    assert any(g.startswith("static/icons/") for g in globs)
+
+
+def test_pages_link_the_manifest_and_apple_meta_tags(client):
+    html = client.get("/").text
+    assert '<link rel="manifest" href="/manifest.webmanifest">' in html
+    assert 'rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png"' in html
+    assert 'name="apple-mobile-web-app-title" content="Play"' in html
+    assert 'name="apple-mobile-web-app-capable" content="yes"' in html
+    assert "<title>Play</title>" in html
+    assert 'media="(prefers-color-scheme: light)"' in html  # theme-color for both schemes
