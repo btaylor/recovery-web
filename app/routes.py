@@ -100,7 +100,7 @@ def play(kind, item_id):
         abort(404)
     except NoRoom as e:
         return str(e), 409, {"Content-Type": "text/plain; charset=utf-8"}  # shown as a toast
-    return "", 204
+    return _refresh()  # the mini bar picks up the new track straight away
 
 
 def _refresh():

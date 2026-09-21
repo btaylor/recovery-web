@@ -236,6 +236,27 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 /* Speakers: a bottom sheet (not a popover) */
 .sheet--open { display: flex; z-index: 20; inset: auto 0 0 0; margin: 0 auto; max-width: 560px; max-height: 70vh; border-radius: 22px 22px 0 0; padding-bottom: calc(env(safe-area-inset-bottom) + 18px); }
 
+/* Working feedback. htmx puts .htmx-request on whatever sent the request, for as long as it takes. */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin, .tile.htmx-request::after, .list.htmx-request .list__art::after, .tracks button.htmx-request .n::after {
+  content: ""; display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -.15em;
+}
+.tile.htmx-request::after, .list.htmx-request .list__art::after { position: absolute; inset: 0; margin: auto; width: 28px; height: 28px; border-width: 3px; color: #fff; }
+.tile.htmx-request img, .list.htmx-request img { filter: brightness(.55); }
+.list__art { position: relative; }
+.play:disabled { cursor: progress; }
+.play .busy, .play .done { display: none; }
+.play.played .idle { display: none; }
+.play.played .done { display: inline; }
+.play.htmx-request .idle, .play.htmx-request .done { display: none; }
+.play.htmx-request .busy { display: inline; }
+.tracks button.htmx-request { opacity: .55; cursor: progress; }
+.tracks .n { position: relative; }
+.tracks button.htmx-request .n { color: transparent; }
+.tracks button.htmx-request .n::after { position: absolute; left: 0; top: 50%; margin-top: -.5em; width: .9em; height: .9em; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .spin, .htmx-request::after, .htmx-request .n::after { animation-duration: 2.5s; } }
+
 /* Errors: a toast for failed htmx calls, a full page for failed navigation */
 .toast {
   position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px);

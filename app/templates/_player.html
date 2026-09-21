@@ -1,4 +1,4 @@
-<footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every 3s" hx-swap="outerHTML" hx-disinherit="hx-swap">
+<footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every {{ 1 if st and st.state == 'TRANSITIONING' else 3 }}s" hx-swap="outerHTML" hx-disinherit="hx-swap">
   {% if st and st.title %}
   <button class="player__open" hx-get="/now" hx-target="#detail" aria-label="Now playing">
     <span class="player__art">{% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=100" alt="">{% endif %}</span>
@@ -10,7 +10,7 @@
   <div class="transport transport--mini">
     {% if st.song %}<button class="heart{% if st.starred %} on{% endif %}" hx-post="/star" hx-swap="none" aria-label="Favourite">{{ "♥" if st.starred else "♡" }}</button>{% endif %}
     <button hx-post="/transport/prev" hx-swap="none" aria-label="Previous">⏮</button>
-    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{{ "⏸" if st.state == "PLAYING" else "▶" }}</button>
+    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{% if st.state == "TRANSITIONING" %}<i class="spin"></i>{% elif st.state == "PLAYING" %}⏸{% else %}▶{% endif %}</button>
     <button hx-post="/transport/next" hx-swap="none" aria-label="Next">⏭</button>
   </div>
   {% else %}

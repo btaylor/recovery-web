@@ -48,6 +48,33 @@ def test_mini_bar_idle_and_paused(ctx):
     assert "▶" in c.get("/player").text
 
 
+def test_while_sonos_is_buffering_the_bar_shows_a_spinner_and_polls_faster(ctx):
+    c, player, _ = ctx
+    player.status.return_value = dict(ST, state="TRANSITIONING")
+    bar = c.get("/player").text
+    assert 'class="spin"' in bar and "⏸" not in bar
+    assert "every 1s" in bar
+    assert 'class="spin"' in c.get("/now/top").text
+    player.status.return_value = dict(ST, state="PLAYING")
+    assert "every 3s" in c.get("/player").text  # back to normal once it is playing
+
+
+def test_play_refreshes_the_bar_immediately_and_the_buttons_show_progress(ctx):
+    c, *_ = ctx
+    r = c.post("/play/album/al1")
+    assert r.status_code == 204 and r.headers["HX-Trigger"] == "refresh"
+    detail = create_app(Config.from_env(ENV))
+    detail.extensions["nd"] = MagicMock()
+    detail.extensions["sonos"] = MagicMock(group_names=[], zones=MagicMock(return_value={}))
+    detail.extensions["player"] = MagicMock(follow_on_default=True)
+    detail.extensions["nd"].get_album.return_value = NS(
+        id="al1", name="Blue Hour", artist="A", year=1974, genre="Jazz", song_count=1, duration=60,
+        cover_art=None, song=[NS(title="Opening", artist="A", duration=60)])
+    html = detail.test_client().get("/album/al1").text
+    assert "Starting…" in html                        # the Play button's in-flight label
+    assert html.count('hx-disabled-elt="this"') == 2  # Play and the track row can't be double-tapped
+
+
 def test_now_playing_shows_progress_position_and_follow_on(ctx):
     c, *_ = ctx
     html = c.get("/now/top").text
