@@ -48,15 +48,17 @@ def test_mini_bar_idle_and_paused(ctx):
     assert "▶" in c.get("/player").text
 
 
-def test_while_sonos_is_buffering_the_bar_shows_a_spinner_and_polls_faster(ctx):
+def test_while_sonos_is_buffering_the_bar_shows_a_spinner_at_the_normal_poll_rate(ctx):
+    # Polling faster during TRANSITIONING used to pile extra live SOAP requests onto the speaker
+    # right as it started a track — the exact moment it's busiest — causing real audio stutter.
     c, player, _ = ctx
     player.status.return_value = dict(ST, state="TRANSITIONING")
     bar = c.get("/player").text
     assert 'class="spin"' in bar and "⏸" not in bar
-    assert "every 1s" in bar
+    assert "every 3s" in bar and "every 1s" not in bar  # never speeds up
     assert 'class="spin"' in c.get("/now/top").text
     player.status.return_value = dict(ST, state="PLAYING")
-    assert "every 3s" in c.get("/player").text  # back to normal once it is playing
+    assert "every 3s" in c.get("/player").text
 
 
 def test_play_refreshes_the_bar_immediately_and_the_buttons_show_progress(ctx):
