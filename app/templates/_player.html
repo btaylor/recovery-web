@@ -12,10 +12,10 @@
     <div class="player__sub"><span class="artist">{{ st.artist }}</span>{% if room %}<span class="dot">·</span><button class="room" hx-get="/speakers" hx-target="#detail">{{ room }}</button>{% endif %}</div>
   </div>
   <div class="transport transport--mini">
-    {% if st.song %}<button class="heart{% if st.starred %} on{% endif %}" hx-post="/star" hx-swap="none" aria-label="Favourite">{{ "♥" if st.starred else "♡" }}</button>{% endif %}
-    <button hx-post="/transport/prev" hx-swap="none" aria-label="Previous">⏮</button>
-    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{% if st.state == "TRANSITIONING" %}<i class="spin"></i>{% elif st.state == "PLAYING" %}⏸{% else %}▶{% endif %}</button>
-    <button hx-post="/transport/next" hx-swap="none" aria-label="Next">⏭</button>
+    {% if st.song %}<button class="heart{% if st.starred %} on{% endif %}" hx-post="/star" hx-swap="none" aria-label="Favourite">{{ "♥︎" if st.starred else "♡︎" }}</button>{% endif %}
+    <button hx-post="/transport/prev" hx-swap="none" aria-label="Previous">⏮︎</button>
+    <button class="big" hx-post="/transport/toggle" hx-swap="none" aria-label="Play or pause">{% if st.state == "TRANSITIONING" %}<i class="spin"></i>{% elif st.state == "PLAYING" %}⏸︎{% else %}▶︎{% endif %}</button>
+    <button hx-post="/transport/next" hx-swap="none" aria-label="Next">⏭︎</button>
   </div>
   {% else %}
   <span class="player__art"></span>

@@ -12,7 +12,7 @@
       <div class="panel__actions">
         <button class="play" hx-post="/play/{{ kind }}/{{ item.id }}" hx-swap="none" hx-disabled-elt="this"
                 hx-on::after-request="this.classList.toggle('played', event.detail.successful)">
-          <span class="idle">▶ Play</span><span class="busy"><i class="spin"></i> Starting…</span><span class="done">▶ Playing</span>
+          <span class="idle">▶︎ Play</span><span class="busy"><i class="spin"></i> Starting…</span><span class="done">▶︎ Playing</span>
         </button>
         <select name="room" aria-label="Room" hx-post="/group" hx-swap="none" hx-trigger="change">
           {% if not room %}<option value="" selected disabled>Choose room…</option>{% endif %}
