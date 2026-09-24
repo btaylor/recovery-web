@@ -82,7 +82,7 @@ def test_ipados_detection_runs_before_paint_and_excludes_real_macs(client):
 
 def test_top_safe_area_has_an_ipados_windowed_chrome_buffer():
     css = (ROOT / "app" / "static" / "css" / "app.css").read_text()
-    assert "html.ipados { --top-chrome: 20px; }" in css
+    assert "html.ipados { --top-chrome: 10px; }" in css
     top_rules = [l for l in css.splitlines() if "safe-area-inset-top" in l and not l.lstrip().startswith(("*", "/*"))]
     assert len(top_rules) == 5 and all("var(--top-chrome)" in l for l in top_rules)  # every top usage
     bottom_rules = [l for l in css.splitlines() if "safe-area-inset-bottom" in l]

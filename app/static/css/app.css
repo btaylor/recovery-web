@@ -25,7 +25,7 @@
    Applies whenever running on an iPad at all (there's no way to tell windowed apart from
    fullscreen from the page), so top chrome sits a bit lower than strictly needed in fullscreen —
    a better trade-off than the alternative of it sitting under the title bar in windowed mode. */
-html.ipados { --top-chrome: 20px; }
+html.ipados { --top-chrome: 10px; }
 
 @media (prefers-color-scheme: light) {
   :root {
