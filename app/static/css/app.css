@@ -18,7 +18,14 @@
   --shadow-float: 0 14px 40px rgba(0, 0, 0, .6);
   --art-placeholder: linear-gradient(145deg, #3a3a42, #23232a);
   --font: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, sans-serif;
+  --top-chrome: 0px;  /* extra top buffer; see html.ipados below */
 }
+
+/* iPadOS 26 windowed multitasking's title bar isn't reflected in env(safe-area-inset-top).
+   Applies whenever running on an iPad at all (there's no way to tell windowed apart from
+   fullscreen from the page), so top chrome sits a bit lower than strictly needed in fullscreen —
+   a better trade-off than the alternative of it sitting under the title bar in windowed mode. */
+html.ipados { --top-chrome: 20px; }
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -62,7 +69,7 @@ a, button, input, select, .tile { touch-action: manipulation; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   min-height: 100vh;
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + var(--top-chrome));
 }
 @media (min-width: 900px) { .wall { grid-template-columns: repeat(8, 1fr); } }
 
@@ -95,7 +102,7 @@ a, button, input, select, .tile { touch-action: manipulation; }
 }
 
 .capsule {
-  top: calc(env(safe-area-inset-top) + 8px);
+  top: calc(env(safe-area-inset-top) + var(--top-chrome) + 8px);
   background: var(--glass-capsule);
   border-radius: 19px;
   padding: 7px 9px;
@@ -135,8 +142,8 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .sheet { overflow-y: auto; flex-direction: column; align-items: stretch; gap: 0; padding: 18px; color: var(--text); }
 /* "All genres": drops down from the capsule it belongs to, full width on a phone */
 .sheet[popover] {
-  inset: calc(env(safe-area-inset-top) + 64px) 12px auto 12px; margin: 0 auto; width: auto; max-width: 560px;
-  height: auto; max-height: calc(100dvh - env(safe-area-inset-top) - 64px - 24px); border-radius: 22px;
+  inset: calc(env(safe-area-inset-top) + var(--top-chrome) + 64px) 12px auto 12px; margin: 0 auto; width: auto; max-width: 560px;
+  height: auto; max-height: calc(100dvh - env(safe-area-inset-top) - var(--top-chrome) - 64px - 24px); border-radius: 22px;
 }
 @media (min-width: 900px) { .sheet[popover] { inset-inline: 24px; margin: 0 0 0 auto; } }
 .sheet[popover]:not(:popover-open) { display: none; }  /* .glass sets display:flex, which would defeat popover's hidden state */
@@ -166,7 +173,7 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .panel {
   position: fixed; z-index: 20; inset: 0; overflow-y: auto; overscroll-behavior: contain;
   background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-  padding: calc(env(safe-area-inset-top) + 8px) 18px 40px;
+  padding: calc(env(safe-area-inset-top) + var(--top-chrome) + 8px) 18px 40px;
 }
 @media (min-width: 900px) { .panel { left: auto; width: 560px; padding: 24px 28px; border-left: .5px solid var(--glass-border); } }
 .panel__bar button { background: none; border: 0; color: var(--accent); font-size: 28px; line-height: 1; padding: 6px 8px 6px 0; cursor: pointer; }

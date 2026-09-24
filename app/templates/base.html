@@ -14,6 +14,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>{% block title %}Play{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script>
+    // iPadOS 26's windowed multitasking adds a title bar that env(safe-area-inset-top) doesn't
+    // account for (a WebKit gap with no public API to detect the window mode directly), so top
+    // chrome can sit under it. iPadOS reports itself as desktop Safari (navigator.platform is
+    // "MacIntel", same as a real Mac) but is still touch-capable, which a Mac never is — the
+    // standard way to tell the two apart since iOS 13. Runs before paint to avoid a layout flash.
+    if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) {
+      document.documentElement.classList.add("ipados");
+    }
+  </script>
   <script src="{{ url_for('static', filename='js/htmx.min.js') }}" defer></script>
 </head>
 <body>

@@ -69,3 +69,21 @@ def test_pages_link_the_manifest_and_apple_meta_tags(client):
     assert 'name="apple-mobile-web-app-capable" content="yes"' in html
     assert "<title>Play</title>" in html
     assert 'media="(prefers-color-scheme: light)"' in html  # theme-color for both schemes
+
+
+def test_ipados_detection_runs_before_paint_and_excludes_real_macs(client):
+    html = client.get("/").text
+    head, body = html.split("<body", 1)
+    script = head[head.index('navigator.platform === "MacIntel"') - 40:]
+    assert "classList.add(\"ipados\")" in script
+    assert "defer" not in script.split("</script>")[0]  # must run before CSS paints, not after
+    assert "maxTouchPoints > 1" in script  # a real Mac reports 0; only iPad matches both checks
+
+
+def test_top_safe_area_has_an_ipados_windowed_chrome_buffer():
+    css = (ROOT / "app" / "static" / "css" / "app.css").read_text()
+    assert "html.ipados { --top-chrome: 20px; }" in css
+    top_rules = [l for l in css.splitlines() if "safe-area-inset-top" in l and not l.lstrip().startswith(("*", "/*"))]
+    assert len(top_rules) == 5 and all("var(--top-chrome)" in l for l in top_rules)  # every top usage
+    bottom_rules = [l for l in css.splitlines() if "safe-area-inset-bottom" in l]
+    assert bottom_rules and not any("top-chrome" in l for l in bottom_rules)  # unaffected
