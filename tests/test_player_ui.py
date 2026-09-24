@@ -34,7 +34,7 @@ def test_mini_bar_shows_track_room_and_transport(ctx):
     assert 'hx-get="/speakers"' in html            # room name is its own tap target
     assert html.count('hx-get="/now"') == 2         # cover + title open now-playing
     assert 'class="heart on"' in html and "⏸" in html
-    assert 'hx-trigger="refresh from:body, every 3s"' in html
+    assert 'hx-trigger="refresh from:body, every 5s"' in html
     # The bar swaps itself with outerHTML; its buttons must not inherit that, or opening a panel
     # replaces #detail itself and the close handlers (getElementById("detail")) find nothing.
     assert 'hx-disinherit="hx-swap"' in html
@@ -55,10 +55,10 @@ def test_while_sonos_is_buffering_the_bar_shows_a_spinner_at_the_normal_poll_rat
     player.status.return_value = dict(ST, state="TRANSITIONING")
     bar = c.get("/player").text
     assert 'class="spin"' in bar and "⏸" not in bar
-    assert "every 3s" in bar and "every 1s" not in bar  # never speeds up
+    assert "every 5s" in bar and "every 1s" not in bar  # never speeds up
     assert 'class="spin"' in c.get("/now/top").text
     player.status.return_value = dict(ST, state="PLAYING")
-    assert "every 3s" in c.get("/player").text
+    assert "every 5s" in c.get("/player").text
 
 
 def test_play_refreshes_the_bar_immediately_and_the_buttons_show_progress(ctx):

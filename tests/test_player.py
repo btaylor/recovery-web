@@ -11,16 +11,15 @@ def song(i, genre="Jazz", starred=None):
               content_type="audio/mpeg", duration=200, starred=starred)
 
 
-ALBUM = [song(1), song(2), song(3)]
-
-
 @pytest.fixture
 def p():
+    # Fresh song objects per test: toggle_star()/status() now mutate a song's `.starred` in
+    # place, so tests sharing one module-level list would leak state into each other.
+    album = [song(1), song(2), song(3)]
     nd, sonos = MagicMock(), MagicMock()
-    nd.get_album.return_value = NS(name="Blue Hour", song=ALBUM)
-    nd.get_playlist.return_value = NS(name="Dinner", entry=ALBUM)
+    nd.get_album.return_value = NS(name="Blue Hour", song=album)
+    nd.get_playlist.return_value = NS(name="Dinner", entry=album)
     nd.get_similar_songs2.return_value = [song(3), song(10), song(11)]  # s3 is on the album
-    nd.get_song.side_effect = lambda i: song(i)
     nd.get_stream_url.side_effect = lambda sid, tformat: (f"http://nd/stream?id={sid}", {})
     sonos.now_playing.return_value = {"index": 0, "position": "0:01:00", "duration": "0:05:00"}
     return Player(nd, sonos)
@@ -83,18 +82,19 @@ def test_handoff_banner_only_on_last_track_near_the_end(p):
     assert p.status()["handoff"] is False  # nothing coming
 
 
-def test_status_reports_current_song_and_star(p):
+def test_status_reports_current_song_and_star_without_asking_navidrome(p):
     p.play_album("al")
-    p.nd.get_song.side_effect = lambda i: song(i, starred="2026-01-01")
+    p.songs[0].starred = "2026-01-01"  # as Navidrome returned it when the album was fetched
     st = p.status()
     assert st["song"].id == "s1" and st["starred"] is True
+    p.nd.get_song.assert_not_called()  # every 2-3s poll used to hit Navidrome just for this
 
 
-def test_toggle_star(p):
-    assert p.toggle_star("s1") is True
+def test_toggle_star_updates_the_in_memory_song_so_the_next_poll_sees_it(p):
+    s = song(1)
+    assert p.toggle_star(s) is True and s.starred
     p.nd.star.assert_called_once_with(["s1"])
-    p.nd.get_song.side_effect = lambda i: song(i, starred="x")
-    assert p.toggle_star("s1") is False
+    assert p.toggle_star(s) is False and not s.starred
     p.nd.unstar.assert_called_once_with(["s1"])
 
 
@@ -116,3 +116,4 @@ def test_star_current(p):
     p.play_album("al")
     p.star_current()
     p.nd.star.assert_called_once_with(["s1"])
+    assert p.songs[0].starred  # so status() reflects it on the very next poll, no extra call needed

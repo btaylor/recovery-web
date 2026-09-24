@@ -79,8 +79,8 @@ def test_pollers_never_fail_they_show_idle(ctx, exc):
     sonos.label.side_effect = exc
     bar, top = c.get("/player", headers=HX), c.get("/now/top", headers=HX)
     assert bar.status_code == 200 and "Nothing playing" in bar.text
-    assert 'hx-trigger="refresh from:body, every 3s"' in bar.text  # still polling
-    assert top.status_code == 200 and 'every 2s' in top.text
+    assert 'hx-trigger="refresh from:body, every 5s"' in bar.text  # still polling
+    assert top.status_code == 200 and 'every 4s' in top.text
 
 
 def test_cover_proxy_is_a_quiet_502_when_navidrome_is_down(ctx, monkeypatch):

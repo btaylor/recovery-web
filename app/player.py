@@ -75,7 +75,7 @@ class Player:
         np["source"] = self.label
         np["of"] = (np["index"] + 1, self.source_len) if np["index"] < self.source_len else None
         np["song"] = song
-        np["starred"] = bool(self.nd.get_song(song.id).starred)
+        np["starred"] = bool(song.starred)  # from the song already in memory; no Navidrome call per poll
         np["follow_on"] = self.follow_on
         # Last track of the source, mix coming: warn so it can be refused ("stop after").
         np["handoff"] = (
@@ -83,15 +83,15 @@ class Player:
         ) and {"in": left}
         return np
 
-    def toggle_star(self, song_id: str) -> bool:
-        """Favourite / unfavourite a song in Navidrome; returns the new state."""
-        if self.nd.get_song(song_id).starred:
-            self.nd.unstar([song_id])
-            return False
-        self.nd.star([song_id])
-        return True
+    def toggle_star(self, song) -> bool:
+        """Favourite / unfavourite a song in Navidrome; updates the in-memory copy so later
+        polls see it without asking Navidrome again, and returns the new state."""
+        new = not song.starred
+        (self.nd.star if new else self.nd.unstar)([song.id])
+        song.starred = "1" if new else None  # any truthy value reads as starred; the real field is a timestamp
+        return new
 
     def star_current(self) -> None:
         np = self.sonos.now_playing()
         if np and 0 <= np["index"] < len(self.songs):
-            self.toggle_star(self.songs[np["index"]].id)
+            self.toggle_star(self.songs[np["index"]])

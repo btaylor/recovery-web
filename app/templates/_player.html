@@ -1,8 +1,8 @@
-<!-- Flat 3s cadence always: now_playing() hits the speaker's own SOAP interface directly (not
-     cached), and polling faster while TRANSITIONING piled extra requests onto the speaker at the
-     exact moment (track start) it's busiest fetching/decoding audio — causing real stutter. The
-     spinner still shows correctly; it just reflects whatever state the next normal poll sees. -->
-<footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every 3s" hx-swap="outerHTML" hx-disinherit="hx-swap">
+<!-- Flat cadence always (never speeds up for TRANSITIONING — that piled extra requests onto the
+     speaker at the exact moment, track start, it's busiest fetching/decoding audio and caused real
+     stutter). now_playing() is 2 live, uncached SOAP calls straight to the coordinator every poll,
+     for as long as this bar is on screen, so the interval is kept modest even at its normal rate. -->
+<footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every 5s" hx-swap="outerHTML" hx-disinherit="hx-swap">
   {% if st and st.title %}
   <button class="player__open" hx-get="/now" hx-target="#detail" aria-label="Now playing">
     <span class="player__art">{% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=100" alt="">{% endif %}</span>

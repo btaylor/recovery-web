@@ -1,4 +1,6 @@
-<div id="np-top" hx-get="/now/top" hx-trigger="refresh from:body, every 2s" hx-swap="outerHTML">
+<!-- Every poll is 2 live, uncached SOAP calls to the coordinator (the speaker decoding your audio) —
+     kept modest so a long listening session with this screen open doesn't add up to real load. -->
+<div id="np-top" hx-get="/now/top" hx-trigger="refresh from:body, every 4s" hx-swap="outerHTML">
   {% if st and st.title %}
   <div class="np__where">{{ st.source or "Now playing" }}{% if st.of %} · {{ st.of[0] }} of {{ st.of[1] }}{% elif st.source %} · mix{% endif %}</div>
   <div class="np__art">
