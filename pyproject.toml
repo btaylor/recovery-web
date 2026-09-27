@@ -1,6 +1,6 @@
 [project]
 name = "house-music"
-version = "0.2.3"
+version = "0.2.4"
 description = "Album-centric Navidrome front-end that plays to Sonos via SoCo"
 requires-python = ">=3.11"
 dependencies = [
