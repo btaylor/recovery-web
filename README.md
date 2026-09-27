@@ -35,7 +35,8 @@ The app refuses to start if a required variable is missing.
   Linux host or NAS. Docker Desktop on macOS/Windows runs containers in a VM and does not put them on
   your LAN, so run the app natively there. Host networking also means the app takes a port on the host
   itself (`PORT`, default 8000) and `ports:` in compose has no effect. If something already uses 8000 you'll
-  see `Address already in use` in `docker logs`; set another port, e.g. `PORT=8123` in `.env`.
+  see `Address already in use` in `docker logs`; set another port, e.g. `PORT=8181` in `.env`.
+  (Avoid 8123 specifically — that's Home Assistant's own default port, a common collision on a NAS.)
 - **There is no login.** Anyone who can reach the port can control your speakers. Keep it on the LAN.
 
 ## Run
