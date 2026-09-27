@@ -1,6 +1,9 @@
 import logging
 
 from . import create_app
+from .version import __version__
+
+logging.getLogger(__name__).warning("Play %s starting", __version__)  # warning: visible at gunicorn's default level
 
 app = create_app()
 

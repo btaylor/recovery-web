@@ -24,8 +24,10 @@ def test_config_fails_fast_when_missing(key):
 
 
 def test_healthz():
+    from app.version import __version__
+
     client = create_app(Config.from_env(ENV)).test_client()
-    assert client.get("/healthz").json == {"status": "ok"}
+    assert client.get("/healthz").json == {"status": "ok", "version": __version__}
 
 
 def test_stream_url_is_direct_raw_and_authenticated():

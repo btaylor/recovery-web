@@ -5,6 +5,7 @@ from libopensonic.errors import AuthError, CredentialError, SonicError
 from . import navidrome
 from .errors import NAVIDROME, SPEAKER
 from .sonos import NoRoom
+from .version import __version__
 
 bp = Blueprint("main", __name__)
 
@@ -236,7 +237,7 @@ def _page(genre, q, offset):
 
 @bp.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    return {"status": "ok", "version": __version__}
 
 
 # Installable web app ("Add to Home Screen" on iOS/iPadOS, "Add to Dock" in Safari on macOS 14+).
