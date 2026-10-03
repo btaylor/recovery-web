@@ -173,6 +173,15 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 
 /* Album / playlist detail: pushed panel over the wall (wall stays mounted, so scroll is kept) */
 .scrim { position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .5); }
+/* the album panel and its scrim fade in when they open (htmx inserts them fresh each time) */
+@media (prefers-reduced-motion: no-preference) {
+  .scrim, .panel { animation: fade-in .2s ease-out; }
+}
+@keyframes fade-in { from { opacity: 0; } }
+/* While a panel is open, the genre bar's glass goes solid instead of fading out. The browser tints the strip
+   under the title bar from what is behind it, so a fade snapped that colour; a solid background changes it gradually. */
+header.capsule { transition: background-color .2s ease-out; }
+#detail:not(:empty) ~ header.capsule { background: var(--bg); }
 .panel {
   position: fixed; z-index: 20; inset: 0; overflow-y: auto; overscroll-behavior: contain;
   background: var(--glass); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
