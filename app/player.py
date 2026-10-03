@@ -1,15 +1,26 @@
 """Playback orchestration. There is no user-visible queue: an album (or playlist) plays
-through, then a mix seeded from its last song continues. The mix is appended to the
-Sonos queue up front so the handoff is gapless; "stop after" just removes it again."""
+through, then a mix seeded from its last song continues. The album starts straight away;
+the mix is built in the background and appended to the Sonos queue when it is ready, which
+is still ahead of the album's end, so the handoff stays gapless. "stop after" removes it again."""
+import logging
+import threading
+
 from . import navidrome
+from .errors import NAVIDROME
 
 MIX_SIZE = 50
 BANNER_SECONDS = 30
+
+log = logging.getLogger(__name__)
 
 
 def _seconds(hms: str) -> int:
     h, m, s = (int(x) for x in hms.split(":"))
     return h * 3600 + m * 60 + s
+
+
+def _in_background(fn, *args):
+    threading.Thread(target=fn, args=args, daemon=True).start()
 
 
 class Player:
@@ -20,6 +31,10 @@ class Player:
         self.songs = []         # what is in the Sonos queue, in order
         self.source_len = 0     # how many of those are the album/playlist (rest is the mix)
         self.label = ""
+        self._covers = {}       # (title, artist, album) -> cover id, for tracks this app didn't queue
+        self._lock = threading.Lock()  # guards songs against the background mix
+        self._gen = 0                  # bumped by each new play; a mix for an older play is dropped
+        self._run = _in_background     # tests run this inline
 
     def play_album(self, album_id: str, start: int = 0, follow_on: bool | None = None) -> None:
         a = self.nd.get_album(album_id)
@@ -34,10 +49,12 @@ class Player:
             return
         self.follow_on = self.follow_on_default if follow_on is None else follow_on
         self.label = label  # name of the album/playlist, for "Blue Hour · 3 of 9" and "Mix from Blue Hour"
-        self.songs, self.source_len = list(songs), len(songs)
+        with self._lock:
+            self.songs, self.source_len = list(songs), len(songs)
+            self._gen += 1
+        self.sonos.play_songs(self._pairs(self.songs), start)  # the album starts without waiting on the mix
         if self.follow_on:
-            self.songs += self._mix(songs)
-        self.sonos.play_songs(self._pairs(self.songs), start)
+            self._mix_later()
 
     def set_follow_on(self, on: bool) -> None:
         """Turn the mix on/off for what is playing now ("stop after" is off)."""
@@ -47,12 +64,30 @@ class Player:
         if not self.songs:
             return
         if on:
-            mix = self._mix(self.songs[: self.source_len])
+            self._mix_later()
+        else:
+            with self._lock:
+                self.songs = self.songs[: self.source_len]
+            self.sonos.truncate_queue(self.source_len)
+
+    def _mix_later(self) -> None:
+        with self._lock:
+            gen, source = self._gen, list(self.songs[: self.source_len])
+        self._run(self._add_mix, gen, source)
+
+    def _add_mix(self, gen: int, source: list) -> None:
+        """Runs in the background. A failed or slow lookup just leaves the mix out: the album plays on alone."""
+        try:
+            mix = self._mix(source)
+        except Exception:
+            log.warning("Couldn't build the mix after this album; it will play the album only", exc_info=True)
+            return
+        with self._lock:
+            # Only if this is still the play that is on, the mix is still wanted, and it isn't in yet.
+            if gen != self._gen or not self.follow_on or len(self.songs) != self.source_len or not mix:
+                return
             self.songs += mix
             self.sonos.append_songs(self._pairs(mix))
-        else:
-            self.songs = self.songs[: self.source_len]
-            self.sonos.truncate_queue(self.source_len)
 
     def _mix(self, source):
         seed, seen = source[-1], {s.id for s in source}
@@ -66,15 +101,22 @@ class Player:
 
     def status(self) -> dict | None:
         np = self.sonos.now_playing()
-        if np is None or not 0 <= np["index"] < len(self.songs):
+        if np is None:
+            return None
+        # The index alone isn't enough: another queue (the Sonos app, or one from before a restart) can
+        # have a track at the same index, so the queued song must also be the track that is playing.
+        song = self.songs[np["index"]] if 0 <= np["index"] < len(self.songs) else None
+        if song is None or (song.title, song.artist or "") != (np["title"], np["artist"]):
+            # Not something this app queued: no song to act on, but the art can still be found by title.
+            np["cover"] = self._cover_for(np)
             return np
-        song = self.songs[np["index"]]
         dur = _seconds(np["duration"])
         left = dur - _seconds(np["position"])
         np["pct"] = round(100 * _seconds(np["position"]) / dur) if dur else 0
         np["source"] = self.label
         np["of"] = (np["index"] + 1, self.source_len) if np["index"] < self.source_len else None
         np["song"] = song
+        np["cover"] = song.cover_art
         np["starred"] = bool(song.starred)  # from the song already in memory; no Navidrome call per poll
         np["follow_on"] = self.follow_on
         # Last track of the source, mix coming: warn so it can be refused ("stop after").
@@ -82,6 +124,21 @@ class Player:
             self.follow_on and np["index"] == self.source_len - 1 and left <= BANNER_SECONDS
         ) and {"in": left}
         return np
+
+    def _cover_for(self, np) -> str | None:
+        """Cover id for a track this app didn't queue, found by its title in Navidrome. Cached per track
+        so the 2-3s polls don't search again; a failed search isn't cached, so the next poll retries."""
+        key = (np["title"], np["artist"], np["album"])
+        if key not in self._covers:
+            try:
+                hits = self.nd.search3(np["title"], artist_count=0, album_count=0, song_count=20).song or []
+            except NAVIDROME:
+                return None
+            match = next((s for s in hits if (s.title, s.artist, s.album) == key), None)
+            if len(self._covers) > 500:
+                self._covers.clear()
+            self._covers[key] = match.cover_art if match else None
+        return self._covers[key]
 
     def toggle_star(self, song) -> bool:
         """Favourite / unfavourite a song in Navidrome; updates the in-memory copy so later

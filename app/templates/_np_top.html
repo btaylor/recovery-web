@@ -4,7 +4,7 @@
   {% if st and st.title %}
   <div class="np__where">{{ st.source or "Now playing" }}{% if st.of %} · {{ st.of[0] }} of {{ st.of[1] }}{% elif st.source %} · mix{% endif %}</div>
   <div class="np__art">
-    {% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=600" alt="">{% endif %}
+    {% if st.cover %}<img src="/cover/{{ st.cover }}?size=600" alt="">{% endif %}
     {% if st.handoff %}
     <div class="glass banner">
       <small>Up next · in 0:{{ "%02d"|format(st.handoff["in"]) }}</small>

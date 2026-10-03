@@ -5,7 +5,7 @@
 <footer id="player" class="glass player" hx-get="/player" hx-trigger="refresh from:body, every 5s" hx-swap="outerHTML" hx-disinherit="hx-swap">
   {% if st and st.title %}
   <button class="player__open" hx-get="/now" hx-target="#detail" aria-label="Now playing">
-    <span class="player__art">{% if st.song and st.song.cover_art %}<img src="/cover/{{ st.song.cover_art }}?size=100" alt="">{% endif %}</span>
+    <span class="player__art">{% if st.cover %}<img src="/cover/{{ st.cover }}?size=100" alt="">{% endif %}</span>
   </button>
   <div class="player__meta">
     <button class="player__title" hx-get="/now" hx-target="#detail">{{ st.title }}</button>

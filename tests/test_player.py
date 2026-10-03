@@ -7,7 +7,7 @@ from app.player import Player
 
 
 def song(i, genre="Jazz", starred=None):
-    return NS(id=f"s{i}", title=f"T{i}", artist="A", album="Al", genre=genre,
+    return NS(id=f"s{i}", title=f"T{i}", artist="A", album="Al", genre=genre, cover_art=f"c{i}",
               content_type="audio/mpeg", duration=200, starred=starred)
 
 
@@ -21,8 +21,17 @@ def p():
     nd.get_playlist.return_value = NS(name="Dinner", entry=album)
     nd.get_similar_songs2.return_value = [song(3), song(10), song(11)]  # s3 is on the album
     nd.get_stream_url.side_effect = lambda sid, tformat: (f"http://nd/stream?id={sid}", {})
-    sonos.now_playing.return_value = {"index": 0, "position": "0:01:00", "duration": "0:05:00"}
-    return Player(nd, sonos)
+    sonos.now_playing.return_value = {"index": 0, "position": "0:01:00", "duration": "0:05:00",
+                                      "title": "T1", "artist": "A", "album": "Al"}  # song 1 of the album
+    p = Player(nd, sonos)
+    p._run = lambda fn, *args: fn(*args)  # the background mix runs right away in tests
+    return p
+
+
+def appended(p):
+    """The mix as it was added to the queue after the album started."""
+    calls = p.sonos.append_songs.call_args_list
+    return [s.id for _, s in calls[-1].args[0]] if calls else []
 
 
 def queued(p):
@@ -30,11 +39,38 @@ def queued(p):
     return [s.id for _, s in pairs], start
 
 
-def test_album_then_mix_seeded_from_last_song_without_dupes(p):
+def test_album_starts_at_once_then_mix_is_added_seeded_from_last_song_without_dupes(p):
     p.play_album("al", start=1)
     ids, start = queued(p)
-    assert ids == ["s1", "s2", "s3", "s10", "s11"] and start == 1
+    assert ids == ["s1", "s2", "s3"] and start == 1      # the album goes to the speakers first
+    assert appended(p) == ["s10", "s11"]                   # then the mix joins the queue
     p.nd.get_similar_songs2.assert_called_once_with("s3", 50)
+
+
+def test_album_plays_before_the_mix_is_even_looked_up(p):
+    order = []
+    p.sonos.play_songs.side_effect = lambda *a, **k: order.append("play")
+    p.nd.get_similar_songs2.side_effect = lambda *a: order.append("mix") or []
+    p.nd.get_random_songs.return_value = []
+    p.play_album("al")
+    assert order[0] == "play"
+
+
+def test_mix_that_fails_leaves_the_album_playing_alone(p):
+    p.nd.get_similar_songs2.side_effect = TimeoutError("slow")
+    p.play_album("al")
+    assert queued(p)[0] == ["s1", "s2", "s3"] and len(p.songs) == 3
+    p.sonos.append_songs.assert_not_called()
+
+
+def test_mix_for_an_earlier_album_is_dropped_if_another_starts_first(p):
+    later = []
+    p._run = lambda fn, *args: later.append((fn, args))   # hold the background work until we say so
+    p.play_album("al")
+    p.play_album("al")                                     # a new play before the first mix is ready
+    for fn, args in later:
+        fn(*args)
+    assert p.sonos.append_songs.call_count == 1           # only the current play's mix is added
 
 
 def test_playlist_behaves_like_album(p):
@@ -46,7 +82,7 @@ def test_falls_back_to_genre_when_no_similar_songs(p):
     p.nd.get_similar_songs2.return_value = []
     p.nd.get_random_songs.return_value = [song(20)]
     p.play_album("al")
-    assert queued(p)[0][-1] == "s20"
+    assert appended(p)[-1] == "s20"
     p.nd.get_random_songs.assert_called_once_with(50, genre="Jazz")
 
 
@@ -56,7 +92,7 @@ def test_follow_on_off_means_album_only(p):
     assert queued(p)[0] == ["s1", "s2", "s3"]
     p.nd.get_similar_songs2.assert_not_called()
     p.play_album("al", follow_on=True)  # per-play override
-    assert len(queued(p)[0]) == 5 and p.follow_on
+    assert len(p.songs) == 5 and p.follow_on
 
 
 def test_stop_after_removes_mix_and_can_be_undone(p):
@@ -73,12 +109,12 @@ def test_stop_after_removes_mix_and_can_be_undone(p):
 def test_handoff_banner_only_on_last_track_near_the_end(p):
     p.play_album("al")
     assert p.status()["handoff"] is False  # first track
-    p.sonos.now_playing.return_value = {"index": 2, "position": "0:04:32", "duration": "0:05:00"}
+    p.sonos.now_playing.return_value = {"index": 2, "position": "0:04:32", "duration": "0:05:00", "title": "T3", "artist": "A", "album": "Al"}
     assert p.status()["handoff"] == {"in": 28}
-    p.sonos.now_playing.return_value = {"index": 2, "position": "0:01:00", "duration": "0:05:00"}
+    p.sonos.now_playing.return_value = {"index": 2, "position": "0:01:00", "duration": "0:05:00", "title": "T3", "artist": "A", "album": "Al"}
     assert p.status()["handoff"] is False  # too early
     p.set_follow_on(False)
-    p.sonos.now_playing.return_value = {"index": 2, "position": "0:04:50", "duration": "0:05:00"}
+    p.sonos.now_playing.return_value = {"index": 2, "position": "0:04:50", "duration": "0:05:00", "title": "T3", "artist": "A", "album": "Al"}
     assert p.status()["handoff"] is False  # nothing coming
 
 
@@ -104,11 +140,42 @@ def test_playing_an_empty_playlist_is_a_noop(p):
     p.sonos.play_songs.assert_not_called()
 
 
+EXTERNAL = {"index": 40, "position": "0:01:00", "duration": "0:05:00", "title": "T1", "artist": "A", "album": "Al"}
+
+
+def test_art_is_found_by_title_for_a_track_this_app_did_not_queue(p):
+    p.sonos.now_playing.return_value = EXTERNAL
+    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9")])
+    assert p.status()["cover"] == "c9"
+    p.status()
+    p.nd.search3.assert_called_once()  # cached: the 2-3s polls don't search again
+
+
+def test_same_index_in_another_queue_does_not_borrow_our_song_art(p):
+    p.play_album("al1")                                     # our queue: index 0 is T1 by A (cover c1)
+    p.sonos.now_playing.return_value = {"index": 0, "position": "0:01:00", "duration": "0:05:00",
+                                        "title": "Star Wars", "artist": "John Williams", "album": "Star Wars"}
+    p.nd.search3.return_value = NS(song=[NS(title="Star Wars", artist="John Williams",
+                                            album="Star Wars", cover_art="jw1")])
+    st = p.status()
+    assert st["cover"] == "jw1" and "song" not in st       # not our song, not our art
+
+
+def test_art_search_failure_shows_no_art_and_is_retried_next_poll(p):
+    from libopensonic.errors import SonicError
+    p.sonos.now_playing.return_value = EXTERNAL
+    p.nd.search3.side_effect = SonicError("down")
+    assert p.status()["cover"] is None
+    p.nd.search3.side_effect = None
+    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9")])
+    assert p.status()["cover"] == "c9"
+
+
 def test_status_has_progress_source_and_position_in_source(p):
     p.play_album("al")
     st = p.status()
     assert st["pct"] == 20 and st["source"] == "Blue Hour" and st["of"] == (1, 3)
-    p.sonos.now_playing.return_value = {"index": 4, "position": "0:00:10", "duration": "0:03:00"}
+    p.sonos.now_playing.return_value = {"index": 4, "position": "0:00:10", "duration": "0:03:00", "title": "T11", "artist": "A", "album": "Al"}
     assert p.status()["of"] is None  # in the mix
 
 
