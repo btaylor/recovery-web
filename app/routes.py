@@ -1,5 +1,7 @@
+from urllib.parse import quote, unquote
+
 import requests
-from flask import Blueprint, Response, abort, current_app, jsonify, render_template, request
+from flask import Blueprint, Response, abort, current_app, jsonify, make_response, render_template, request
 from libopensonic.errors import AuthError, CredentialError, SonicError
 
 from . import navidrome
@@ -8,6 +10,9 @@ from .sonos import NoRoom
 from .version import __version__
 
 bp = Blueprint("main", __name__)
+
+ROOM_COOKIE = "room"  # this browser's own speaker, so each device keeps its own default
+ROOM_COOKIE_AGE = 60 * 60 * 24 * 365
 
 PAGE = 48  # a multiple of both wall widths (3 phone, 8 desktop) so rows stay full
 RAIL = 15  # genres shown as chips; the rest are in the "all genres" sheet
@@ -77,13 +82,18 @@ def mmss(seconds):
     return f"{(seconds or 0) // 60}:{(seconds or 0) % 60:02d}"
 
 
+def _device_room() -> str:
+    return unquote(request.cookies.get(ROOM_COOKIE, ""))
+
+
 def _detail(kind, item, songs, sub, meta):
     sonos = current_app.extensions["sonos"]
     rooms, saved = sorted(sonos.zones()), sonos.group_names
+    # This device's own speaker first; the shared playback group only if this device never picked one.
+    room = next((r for r in (_device_room(), saved[0] if saved else "") if r in rooms), "")
     return render_template(
         "_detail.html", kind=kind, item=item, songs=songs, sub=sub, meta=meta, rooms=rooms,
-        room=saved[0] if saved and saved[0] in rooms else "",
-        follow_on=current_app.extensions["player"].follow_on_default,
+        room=room, follow_on=current_app.extensions["player"].follow_on_default,
     )
 
 
@@ -103,7 +113,10 @@ def playlist(playlist_id):
 @bp.post("/play/<kind>/<item_id>")
 def play(kind, item_id):
     player = current_app.extensions["player"]
+    sonos = current_app.extensions["sonos"]
     start = request.args.get("start", 0, type=int)
+    if _device_room() in sonos.zones():
+        sonos.anchor(_device_room())  # play to the speaker this device chose
     try:
         {"album": player.play_album, "playlist": player.play_playlist}[kind](item_id, start)
     except KeyError:
@@ -124,7 +137,9 @@ def group():
     if room not in current_app.extensions["sonos"].zones():
         abort(404)
     current_app.extensions["sonos"].set_group([room])
-    return _refresh()
+    resp = make_response(_refresh())
+    resp.set_cookie(ROOM_COOKIE, quote(room), max_age=ROOM_COOKIE_AGE, samesite="Lax", httponly=True)
+    return resp
 
 
 @bp.post("/group/toggle")

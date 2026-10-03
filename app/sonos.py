@@ -87,6 +87,12 @@ class Sonos:
                 z.unjoin()
         return coord
 
+    def anchor(self, room: str) -> None:
+        """Make `room` the group's anchor (what plays and the mini bar follow), keeping the rest of the group."""
+        names = [room] + [n for n in self.group_names if n != room]
+        if names != self.group_names:
+            self.set_group(names)
+
     def coordinator(self) -> soco.SoCo | None:
         """The coordinator of the saved group, as it is right now. Read-only, cheap enough to poll."""
         zones = self.zones()

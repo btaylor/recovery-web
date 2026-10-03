@@ -45,6 +45,21 @@ def test_no_saved_room_prompts_for_one(ctx):
     assert "Choose room" in c.get("/album/al1").text
 
 
+def test_device_room_cookie_is_preselected_over_the_shared_group(ctx):
+    c, _, _, _ = ctx
+    c.set_cookie("room", "Kitchen")                           # the group is Study, this device's own is Kitchen
+    assert '<option selected>Kitchen</option>' in c.get("/album/al1").text
+
+
+def test_play_anchors_the_device_room_only_when_it_has_one(ctx):
+    c, _, sonos, _ = ctx
+    c.post("/play/album/al1")
+    sonos.anchor.assert_not_called()
+    c.set_cookie("room", "Kitchen")
+    c.post("/play/album/al1")
+    sonos.anchor.assert_called_once_with("Kitchen")
+
+
 def test_missing_album_is_404(ctx):
     c, nd, *_ = ctx
     nd.get_album.side_effect = SonicError("nope")
@@ -79,6 +94,12 @@ def test_room_picker_sets_group_and_rejects_unknown_rooms(ctx):
     assert c.post("/group", data={"room": "Kitchen"}).status_code == 204
     sonos.set_group.assert_called_once_with(["Kitchen"])
     assert c.post("/group", data={"room": "Garage"}).status_code == 404
+
+
+def test_room_picker_remembers_the_room_on_this_device(ctx):
+    c, *_ = ctx
+    r = c.post("/group", data={"room": "Kitchen"})
+    assert r.headers["Set-Cookie"].startswith("room=Kitchen") and "HttpOnly" in r.headers["Set-Cookie"]
 
 
 def test_change_follow_on_sets_default_only(ctx):

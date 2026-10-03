@@ -110,3 +110,13 @@ def test_transport_toggles_and_survives_queue_boundary(tmp_path):
     k.play.assert_called_once()
     k.next.side_effect = SoCoException("boundary")
     son.transport("next")  # no raise
+
+
+def test_anchor_moves_the_room_to_the_front_and_keeps_the_rest(tmp_path):
+    son, s = make(tmp_path, "Kitchen", "Study", "Patio")
+    son.set_group(["Kitchen", "Study"])
+    son.anchor("Study")
+    assert son.group_names == ["Study", "Kitchen"]           # Study coordinates now, Kitchen still grouped
+    son.set_group = MagicMock()
+    son.anchor("Study")
+    son.set_group.assert_not_called()                        # already the anchor: nothing to do
