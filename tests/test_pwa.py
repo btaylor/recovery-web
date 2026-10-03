@@ -77,6 +77,13 @@ def test_every_launch_splash_linked_for_ios_exists_and_is_packaged(client):
     assert any(g.startswith("static/splash/") for g in globs)
 
 
+def test_search_box_is_16px_so_ios_does_not_zoom_on_focus():
+    import re
+    css = (ROOT / "app" / "static" / "css" / "app.css").read_text()
+    search = re.search(r"\n\.search \{(.*?)\}", css, re.S).group(1)
+    assert re.search(r"font-size: (\d+)px", search).group(1) == "16"
+
+
 def test_service_worker_is_served_from_the_root_and_registered(client):
     r = client.get("/sw.js")
     assert r.status_code == 200 and "javascript" in r.mimetype

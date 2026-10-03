@@ -135,7 +135,7 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .chip--all { background: none; color: var(--text-2); padding: 4px 8px; }
 .search {
   flex: none; width: 34px; border: 0; border-radius: 13px; padding: 5px 0; text-align: center;
-  font: inherit; font-size: 13px; color: var(--text); background: var(--chip-bg); transition: width .2s;
+  font: inherit; font-size: 16px; /* iOS zooms in on focus for any input under 16px */ color: var(--text); background: var(--chip-bg); transition: width .2s;
 }
 .search:focus, .search:not(:placeholder-shown) { width: 150px; text-align: left; padding: 5px 12px; outline: none; }
 @media (min-width: 900px) { .search { width: 180px; text-align: left; padding: 5px 12px; } }
