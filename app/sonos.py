@@ -23,6 +23,22 @@ REDISCOVER_AFTER = 10  # seconds to wait before searching again when no speaker 
 log = logging.getLogger(__name__)
 
 
+class _Steps:
+    """Seconds spent in each named step, for the play timing log."""
+
+    def __init__(self):
+        self._t = time.monotonic()
+        self._parts = []
+
+    def done(self, name: str) -> None:
+        now = time.monotonic()
+        self._parts.append(f"{name} {now - self._t:.2f}s")
+        self._t = now
+
+    def __str__(self) -> str:
+        return ", ".join(self._parts) or "no steps finished"
+
+
 class NoRoom(RuntimeError):
     """No online speaker in the playback group."""
 
@@ -133,13 +149,22 @@ class Sonos:
 
     def play_songs(self, urls_and_songs, start: int = 0) -> None:
         """Replace the queue with (stream_url, song) pairs and play from index `start`."""
-        coord = self.set_group(self.group_names)  # re-assert the group before starting
-        if coord is None:
-            raise NoRoom("Choose a room first")
-        coord.clear_queue()
-        coord.play_mode = "NORMAL"  # albums play in order, whatever the speaker was left on
-        coord.add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])
-        coord.play_from_queue(start)
+        steps = _Steps()
+        try:
+            coord = self.set_group(self.group_names)  # re-assert the group before starting
+            steps.done("group")
+            if coord is None:
+                raise NoRoom("Choose a room first")
+            coord.clear_queue()
+            coord.play_mode = "NORMAL"  # albums play in order, whatever the speaker was left on
+            steps.done("clear")
+            coord.add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])
+            steps.done("queue")
+            coord.play_from_queue(start)
+            steps.done("start")
+        finally:
+            # Logged even when a step fails, so the last line names the step that did not finish.
+            log.warning("Play timing (%d tracks): %s", len(urls_and_songs), steps)
 
     def append_songs(self, urls_and_songs) -> None:
         self.coordinator().add_multiple_to_queue([_didl(url, s) for url, s in urls_and_songs])

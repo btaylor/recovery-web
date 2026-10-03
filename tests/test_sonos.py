@@ -1,6 +1,9 @@
 from types import SimpleNamespace as NS
 from unittest.mock import MagicMock
 
+import pytest
+from soco.exceptions import SoCoException
+
 from app.sonos import Sonos
 
 
@@ -120,3 +123,16 @@ def test_anchor_moves_the_room_to_the_front_and_keeps_the_rest(tmp_path):
     son.set_group = MagicMock()
     son.anchor("Study")
     son.set_group.assert_not_called()                        # already the anchor: nothing to do
+
+
+def test_play_logs_timing_per_step_even_when_a_step_fails(tmp_path, caplog):
+    son, s = make(tmp_path, "Kitchen")
+    k = s["Kitchen"]
+    k.group.coordinator = k
+    son.set_group(["Kitchen"])
+    song = NS(title="t", artist="a", album="b", duration=1, content_type="audio/flac")
+    k.add_multiple_to_queue.side_effect = SoCoException("speaker timed out")
+    with caplog.at_level("WARNING"), pytest.raises(SoCoException):
+        son.play_songs([("http://nd/stream", song)])
+    line = next(r.getMessage() for r in caplog.records if "Play timing" in r.getMessage())
+    assert "(1 tracks): group " in line and "clear " in line and "queue " not in line  # stopped at the queue
