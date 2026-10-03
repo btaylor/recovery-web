@@ -219,6 +219,12 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
 .np__where { pointer-events: none; text-align: center; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); margin-top: -30px; }
 .np__art { position: relative; aspect-ratio: 1; max-height: 340px; margin: 14px auto 0; border-radius: 14px; overflow: hidden; background: var(--art-placeholder); box-shadow: 0 18px 44px rgba(0, 0, 0, .5); }
 .np__art > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Full-screen album art (tap the art in either panel) */
+.art-full { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: #000;
+  opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility .25s; }
+.art-full.open { opacity: 1; visibility: visible; }
+.art-full img { width: min(100vw, 100vh); aspect-ratio: 1; object-fit: cover; display: block; }
 /* `.panel .` so this beats `.panel h2 { margin: 0 }`; without it the margin never applied */
 .panel .np__title { font-size: 22px; letter-spacing: -.02em; margin: calc(16px + 4pt) 0 0; }
 .np__sub { font-size: 14px; color: var(--text-2); }

@@ -9,6 +9,9 @@
 {% block content %}
 <main id="wall" class="wall">{% include "_wall.html" %}</main>
 <div id="detail"></div>
+<div id="art-full" class="art-full">
+  <img alt="">
+</div>
 
 <header class="glass capsule">
   <a class="chip chip--lists{% if playlists is defined %} on{% endif %}" href="/?lists=1" hx-get="/playlists" hx-target="#wall"
@@ -35,4 +38,5 @@
 <footer id="player" class="glass player" hx-get="/player" hx-trigger="load" hx-swap="outerHTML"></footer>
 <script src="{{ url_for('static', filename='js/peek.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/keys.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/art.js') }}" defer></script>
 {% endblock %}
