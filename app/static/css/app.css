@@ -138,7 +138,8 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
   font: inherit; font-size: 16px; /* iOS zooms in on focus for any input under 16px */ color: var(--text); background: var(--chip-bg); transition: width .2s;
 }
 .search:focus, .search:not(:placeholder-shown) { width: 150px; text-align: left; padding: 5px 12px; outline: none; }
-@media (min-width: 900px) { .search { width: 180px; text-align: left; padding: 5px 12px; } }
+/* min-width, not width: `.search:focus` (150px) outranks this media rule, so focusing used to shrink it */
+@media (min-width: 900px) { .search { width: 180px; min-width: 180px; text-align: left; padding: 5px 12px; } }
 .sheet { overflow-y: auto; flex-direction: column; align-items: stretch; gap: 0; padding: 18px; color: var(--text); }
 /* "All genres": drops down from the capsule it belongs to, full width on a phone */
 .sheet[popover] {

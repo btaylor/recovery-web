@@ -82,6 +82,8 @@ def test_search_box_is_16px_so_ios_does_not_zoom_on_focus():
     css = (ROOT / "app" / "static" / "css" / "app.css").read_text()
     search = re.search(r"\n\.search \{(.*?)\}", css, re.S).group(1)
     assert re.search(r"font-size: (\d+)px", search).group(1) == "16"
+    desktop = re.search(r"@media \(min-width: 900px\) \{ \.search \{(.*?)\} \}", css).group(1)
+    assert "min-width: 180px" in desktop  # focus rule (150px) must not shrink the wide box
 
 
 def test_service_worker_is_served_from_the_root_and_registered(client):
