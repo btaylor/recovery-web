@@ -282,6 +282,14 @@ def manifest():
     return resp
 
 
+@bp.get("/sw.js")
+def service_worker():
+    # Served from the root so its scope covers the whole app. no-cache: browsers re-check it, so updates land.
+    resp = current_app.send_static_file("js/sw.js")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @bp.get("/cover/<cover_id>")
 def cover(cover_id):
     try:

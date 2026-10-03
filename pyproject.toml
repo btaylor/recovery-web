@@ -20,7 +20,7 @@ packages = ["app"]
 
 # Without this the installed package (and the Docker image) has no templates, CSS or JS.
 [tool.setuptools.package-data]
-app = ["templates/*.html", "static/css/*", "static/js/*", "static/icons/*.png"]
+app = ["templates/*.html", "static/css/*", "static/js/*", "static/icons/*.png", "static/splash/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

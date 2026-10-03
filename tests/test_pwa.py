@@ -61,6 +61,29 @@ def test_icons_are_packaged_so_the_docker_image_has_them():
     assert any(g.startswith("static/icons/") for g in globs)
 
 
+def test_every_launch_splash_linked_for_ios_exists_and_is_packaged(client):
+    import re
+    html = client.get("/").text
+    links = re.findall(r'<link rel="apple-touch-startup-image" href="([^"]+)" media="([^"]+)"', html)
+    assert len(links) == 17
+    for href, media in links:
+        path = ROOT / "app" / href.lstrip("/")
+        assert path.exists(), href
+        w, h = png_size(path)
+        dpr = 3 if "-webkit-device-pixel-ratio: 3" in media else 2
+        css_w, css_h = (int(x) for x in re.findall(r"device-(?:width|height): (\d+)px", media))
+        assert (w, h) in {(css_w * dpr, css_h * dpr), (css_h * dpr, css_w * dpr)}, href  # media matches the pixels
+    globs = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["setuptools"]["package-data"]["app"]
+    assert any(g.startswith("static/splash/") for g in globs)
+
+
+def test_service_worker_is_served_from_the_root_and_registered(client):
+    r = client.get("/sw.js")
+    assert r.status_code == 200 and "javascript" in r.mimetype
+    assert r.headers["Cache-Control"] == "no-cache"
+    assert 'navigator.serviceWorker.register("/sw.js")' in client.get("/").text
+
+
 def test_pages_link_the_manifest_and_apple_meta_tags(client):
     html = client.get("/").text
     assert '<link rel="manifest" href="/manifest.webmanifest">' in html
