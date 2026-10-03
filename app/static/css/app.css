@@ -138,6 +138,8 @@ button.chip { border: 0; font: inherit; font-size: 13px; cursor: pointer; }
   font: inherit; font-size: 16px; /* iOS zooms in on focus for any input under 16px */ color: var(--text); background: var(--chip-bg); transition: width .2s;
 }
 .search:focus, .search:not(:placeholder-shown) { width: 150px; text-align: left; padding: 5px 12px; outline: none; }
+.search::-webkit-search-cancel-button { margin: 0; }  /* keep the native ✕, without its extra space */
+.search:not(:placeholder-shown) { padding-right: 6px; }  /* with text, pull the ✕ in toward the right edge */
 /* min-width, not width: `.search:focus` (150px) outranks this media rule, so focusing used to shrink it */
 @media (min-width: 900px) { .search { width: 180px; min-width: 180px; text-align: left; padding: 5px 12px; } }
 .sheet { overflow-y: auto; flex-direction: column; align-items: stretch; gap: 0; padding: 18px; color: var(--text); }
