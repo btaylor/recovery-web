@@ -7,6 +7,8 @@ Exception types come from the libraries' own docs/source:
   speaker doesn't answer.
 The cover-art proxy uses `requests` for Navidrome and handles its own failures.
 """
+import logging
+
 import aiohttp
 import requests
 from flask import render_template, request
@@ -15,6 +17,9 @@ from soco.exceptions import SoCoException
 
 NAVIDROME = (aiohttp.ClientError, TimeoutError, SonicError)
 SPEAKER = (requests.RequestException, SoCoException)
+
+# The toast doesn't say why, so the server log is the only record of the underlying error.
+log = logging.getLogger(__name__)
 
 
 def _fail(message: str, hint: str = ""):
@@ -25,12 +30,14 @@ def _fail(message: str, hint: str = ""):
 
 
 def _navidrome(e):
+    log.warning("Navidrome failed on %s %s: %r", request.method, request.path, e)
     if isinstance(e, (AuthError, CredentialError)):
         return _fail("Navidrome rejected the username or password.", "Check ND_USER and ND_PASS.")
     return _fail("Can't reach Navidrome.", "Check that it's running and that ND_URL is right.")
 
 
 def _speaker(e):
+    log.warning("Speaker failed on %s %s: %r", request.method, request.path, e)
     return _fail("Can't reach the speaker.", "It may be offline. Reload to look for speakers again.")
 
 

@@ -89,6 +89,14 @@ def test_play_without_a_room_is_409_and_bad_kind_404(ctx):
     assert c.post("/play/song/x").status_code == 404
 
 
+def test_a_failed_play_is_logged_with_its_cause(ctx, caplog):
+    c, _, _, player = ctx
+    player.play_album.side_effect = TimeoutError("navidrome too slow")
+    with caplog.at_level("WARNING"):
+        assert c.post("/play/album/al1").status_code == 502
+    assert "Navidrome failed on POST /play/album/al1" in caplog.text and "too slow" in caplog.text
+
+
 def test_room_picker_sets_group_and_rejects_unknown_rooms(ctx):
     c, _, sonos, _ = ctx
     assert c.post("/group", data={"room": "Kitchen"}).status_code == 204
