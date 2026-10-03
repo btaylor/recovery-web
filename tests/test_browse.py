@@ -1,3 +1,4 @@
+import re
 from types import SimpleNamespace as NS
 from unittest.mock import MagicMock
 
@@ -69,6 +70,15 @@ def test_rail_is_capped_but_sheet_lists_every_genre_as_plain_links(client):
     assert f"⌄ {RAIL + 50}" in html
     sheet = html[html.index('id="genres"'):html.index("<footer")]
     assert "hx-get" not in sheet  # 700 htmx-enabled rows made the page crawl
+
+
+def test_genre_sheet_is_alphabetical(client):
+    c, nd = client
+    nd.get_genres.return_value = [NS(value=v, album_count=n) for v, n in
+                                  [("Rock", 50), ("ambient", 40), ("Jazz", 30), ("Blues", 20)]]
+    html = c.get("/").text
+    sheet = html[html.index('id="genres"'):html.index("<footer")]
+    assert re.findall(r'class="sheet__row" href="[^"]*">([^<]*)<', sheet) == ["ambient", "Blues", "Jazz", "Rock"]
 
 
 def test_full_page_has_infinite_scroll_sentinel(client):

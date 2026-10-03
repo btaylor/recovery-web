@@ -29,7 +29,7 @@
 
 <div id="genres" popover class="glass sheet">
   <h2>All genres</h2>
-  {% for g in genres %}
+  {% for g in genres|sort(case_sensitive=False, attribute="value") %}
   <a class="sheet__row" href="/?genre={{ g.value|urlencode }}">{{ g.value }}<span>{{ g.album_count }} albums</span></a>
   {% endfor %}
   {% if hidden %}<p class="sheet__note">{{ hidden }} rarer genre{{ "s" if hidden != 1 }} (under {{ min_albums }} albums) not shown.</p>{% endif %}
