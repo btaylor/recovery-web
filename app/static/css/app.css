@@ -222,6 +222,9 @@ header.capsule { transition: background-color .2s ease-out; }
 .transport { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .transport--mini { flex: none; gap: 14px; font-size: 15px; }
 .transport--mini .big { font-size: 19px; }
+/* glyphs sit on the text baseline, so centre each one in a fixed box: the heart and the controls then line up */
+.transport--mini button { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; line-height: 1; }
+.transport--mini .heart { position: relative; top: -2px; }  /* the ♡ glyph comes from a font that sits lower than the controls */
 .heart.on { color: var(--accent); }
 .heart { color: var(--text-2); }
 .panel .transport { margin-top: 12px; padding: 0 6px; font-size: 22px; }
