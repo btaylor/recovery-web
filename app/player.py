@@ -31,7 +31,7 @@ class Player:
         self.songs = []         # what is in the Sonos queue, in order
         self.source_len = 0     # how many of those are the album/playlist (rest is the mix)
         self.label = ""
-        self._covers = {}       # (title, artist, album) -> cover id, for tracks this app didn't queue
+        self._found = {}        # (title, artist, album) -> Navidrome song, or None, for tracks this app didn't queue
         self._lock = threading.Lock()  # guards songs against the background mix
         self._gen = 0                  # bumped by each new play; a mix for an older play is dropped
         self._run = _in_background     # tests run this inline
@@ -103,12 +103,13 @@ class Player:
         np = self.sonos.now_playing()
         if np is None:
             return None
-        # The index alone isn't enough: another queue (the Sonos app, or one from before a restart) can
-        # have a track at the same index, so the queued song must also be the track that is playing.
-        song = self.songs[np["index"]] if 0 <= np["index"] < len(self.songs) else None
-        if song is None or (song.title, song.artist or "") != (np["title"], np["artist"]):
-            # Not something this app queued: no song to act on, but the art can still be found by title.
-            np["cover"] = self._cover_for(np)
+        song = self._queued_song(np)
+        if song is None:
+            # Not something this app queued (the Sonos app, or before a restart): the library song found by
+            # title gives the cover and the favourite.
+            np["song"] = self._library_song(np)
+            np["cover"] = np["song"].cover_art if np["song"] else None
+            np["starred"] = bool(np["song"] and np["song"].starred)
             return np
         dur = _seconds(np["duration"])
         left = dur - _seconds(np["position"])
@@ -125,20 +126,28 @@ class Player:
         ) and {"in": left}
         return np
 
-    def _cover_for(self, np) -> str | None:
-        """Cover id for a track this app didn't queue, found by its title in Navidrome. Cached per track
-        so the 2-3s polls don't search again; a failed search isn't cached, so the next poll retries."""
+    def _queued_song(self, np):
+        """The queued song, if it is the track that is playing. The index alone isn't enough: another queue
+        (the Sonos app, or one from before a restart) can have a track at the same index."""
+        if not 0 <= np["index"] < len(self.songs):
+            return None
+        song = self.songs[np["index"]]
+        return song if (song.title, song.artist or "") == (np["title"], np["artist"]) else None
+
+    def _library_song(self, np):
+        """The Navidrome song for a track this app didn't queue, found by title, artist and album. Cached per
+        track so the 2-3s polls don't search again; a failed search isn't cached, so the next poll retries."""
         key = (np["title"], np["artist"], np["album"])
-        if key not in self._covers:
+        if key not in self._found:
             try:
                 hits = self.nd.search3(np["title"], artist_count=0, album_count=0, song_count=20).song or []
             except NAVIDROME:
                 return None
             match = next((s for s in hits if (s.title, s.artist, s.album) == key), None)
-            if len(self._covers) > 500:
-                self._covers.clear()
-            self._covers[key] = match.cover_art if match else None
-        return self._covers[key]
+            if len(self._found) > 500:
+                self._found.clear()
+            self._found[key] = match
+        return self._found[key]
 
     def toggle_star(self, song) -> bool:
         """Favourite / unfavourite a song in Navidrome; updates the in-memory copy so later
@@ -150,5 +159,8 @@ class Player:
 
     def star_current(self) -> None:
         np = self.sonos.now_playing()
-        if np and 0 <= np["index"] < len(self.songs):
-            self.toggle_star(self.songs[np["index"]])
+        if not np:
+            return
+        song = self._queued_song(np) or self._library_song(np)
+        if song:
+            self.toggle_star(song)

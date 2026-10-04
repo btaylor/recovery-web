@@ -145,7 +145,7 @@ EXTERNAL = {"index": 40, "position": "0:01:00", "duration": "0:05:00", "title": 
 
 def test_art_is_found_by_title_for_a_track_this_app_did_not_queue(p):
     p.sonos.now_playing.return_value = EXTERNAL
-    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9")])
+    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9", starred=None)])
     assert p.status()["cover"] == "c9"
     p.status()
     p.nd.search3.assert_called_once()  # cached: the 2-3s polls don't search again
@@ -155,10 +155,24 @@ def test_same_index_in_another_queue_does_not_borrow_our_song_art(p):
     p.play_album("al1")                                     # our queue: index 0 is T1 by A (cover c1)
     p.sonos.now_playing.return_value = {"index": 0, "position": "0:01:00", "duration": "0:05:00",
                                         "title": "Star Wars", "artist": "John Williams", "album": "Star Wars"}
-    p.nd.search3.return_value = NS(song=[NS(title="Star Wars", artist="John Williams",
-                                            album="Star Wars", cover_art="jw1")])
+    p.nd.search3.return_value = NS(song=[NS(id="jw1", title="Star Wars", artist="John Williams",
+                                            album="Star Wars", cover_art="jw1", starred=None)])
     st = p.status()
-    assert st["cover"] == "jw1" and "song" not in st       # not our song, not our art
+    assert st["cover"] == "jw1" and st["song"].id == "jw1"  # the library song, not our song 1
+    p.star_current()
+    p.nd.star.assert_called_once_with(["jw1"])              # the favourite acts on that song, not song 1
+
+
+def test_favourite_works_for_a_track_from_elsewhere(p):
+    p.sonos.now_playing.return_value = EXTERNAL
+    lib = NS(id="jw9", title="T1", artist="A", album="Al", cover_art="c9", starred=None)
+    p.nd.search3.return_value = NS(song=[lib])
+    st = p.status()
+    assert st["song"] is lib and st["starred"] is False      # the heart shows, unfavourited
+    p.star_current()
+    p.nd.star.assert_called_once_with(["jw9"])
+    assert p.status()["starred"] is True                    # the next poll sees it, with no new search
+    p.nd.search3.assert_called_once()
 
 
 def test_art_search_failure_shows_no_art_and_is_retried_next_poll(p):
@@ -167,7 +181,7 @@ def test_art_search_failure_shows_no_art_and_is_retried_next_poll(p):
     p.nd.search3.side_effect = SonicError("down")
     assert p.status()["cover"] is None
     p.nd.search3.side_effect = None
-    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9")])
+    p.nd.search3.return_value = NS(song=[NS(title="T1", artist="A", album="Al", cover_art="c9", starred=None)])
     assert p.status()["cover"] == "c9"
 
 
