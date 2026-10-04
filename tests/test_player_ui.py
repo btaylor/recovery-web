@@ -32,7 +32,8 @@ def test_mini_bar_shows_track_room_and_transport(ctx):
     html = c.get("/player").text
     assert "Low Ceiling" in html and "The Meridians" in html and "Kitchen +1" in html
     assert 'hx-get="/speakers"' in html            # room name is its own tap target
-    assert html.count('hx-get="/now"') == 2         # cover + title open now-playing
+    assert html.count('hx-get="/now"') == 1         # one info area opens now-playing (not the speaker name)
+    assert "click[!event.target.closest('.room')]" in html
     assert 'class="heart on"' in html and "⏸" in html
     assert 'hx-trigger="refresh from:body, every 5s"' in html
     # The bar swaps itself with outerHTML; its buttons must not inherit that, or opening a panel
