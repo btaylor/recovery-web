@@ -3,7 +3,7 @@
 <div class="lists">
   {% for p in playlists %}
   <a class="list" href="/playlist/{{ p.id }}" hx-get="/playlist/{{ p.id }}" hx-target="#detail">
-    <span class="list__art">{% if p.cover_art %}<img src="/cover/{{ p.cover_art }}?size=300" alt="" loading="lazy" onerror="this.remove()">{% endif %}</span>
+    <span class="list__art">{% if p.cover_art %}<img src="/cover/{{ p.cover_art }}?size=600"alt="" loading="lazy" onerror="this.remove()">{% endif %}</span>
     <strong>{{ p.name }}</strong><small>{{ p.song_count }} tracks</small>
   </a>
   {% else %}<p class="empty">No playlists yet.</p>{% endfor %}
@@ -11,7 +11,7 @@
 {% endif %}
 {% for a in albums %}
 <a class="tile" href="/album/{{ a.id }}" hx-get="/album/{{ a.id }}" hx-target="#detail" data-peek="{{ a.name }} · {{ a.artist }}">
-  {% if a.cover_art %}<img src="/cover/{{ a.cover_art }}?size=300" alt="{{ a.name }} by {{ a.artist }}" loading="lazy" onerror="this.remove()">{% endif %}
+  {% if a.cover_art %}<img src="/cover/{{ a.cover_art }}?size=600"alt="{{ a.name }} by {{ a.artist }}" loading="lazy" onerror="this.remove()">{% endif %}
   <span class="peek">{{ a.name }}<small>{{ a.artist }}</small></span>
 </a>
 {% else %}

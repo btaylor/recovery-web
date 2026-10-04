@@ -6,7 +6,7 @@
   {% if st and st.title %}
   <!-- The whole info area opens Now Playing, except the speaker name, which opens the speaker picker. -->
   <div class="player__info" role="button" tabindex="0" aria-label="Now playing" hx-get="/now" hx-target="#detail" hx-trigger="click[!event.target.closest('.room')]">
-    <span class="player__art">{% if st.cover %}<img src="/cover/{{ st.cover }}?size=100" alt="">{% endif %}</span>
+    <span class="player__art">{% if st.cover %}<img src="/cover/{{ st.cover }}?size=150"alt="">{% endif %}</span>
     <div class="player__meta">
       <div class="player__title">{{ st.title }}</div>
       <div class="player__sub"><span class="artist">{{ st.artist }}</span>{% if room %}<span class="dot">·</span><button class="room" hx-get="/speakers" hx-target="#detail">{{ room }}</button>{% endif %}</div>
