@@ -116,7 +116,7 @@ a, button, input, select, .tile { touch-action: manipulation; }
 }
 @media (min-width: 900px) {
   .capsule { left: 24px; right: 24px; border-radius: 22px; }
-  .player { right: auto; width: 330px; left: 24px; }
+  .player { right: auto; width: 660px; left: 24px; }
 }
 
 .chip {
