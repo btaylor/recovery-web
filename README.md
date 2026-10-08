@@ -38,6 +38,9 @@ The app refuses to start if a required variable is missing.
   see `Address already in use` in `docker logs`; set another port, e.g. `PORT=8181` in `.env`.
   (Avoid 8123 specifically — that's Home Assistant's own default port, a common collision on a NAS.)
 - **There is no login.** Anyone who can reach the port can control your speakers. Keep it on the LAN.
+- **Behind a login proxy** (e.g. Authelia forward auth), Play notices an expired session and reloads
+  so the proxy can send you through its login. It checks by fetching `/healthz`, so don't exempt
+  `/healthz` from the proxy's login, or Play will never see that you've been logged out.
 
 ## Run
 

@@ -95,6 +95,14 @@ def test_service_worker_is_served_from_the_root_and_registered(client):
     assert 'navigator.serviceWorker.register("/sw.js")' in client.get("/").text
 
 
+def test_logged_out_check_is_loaded_and_probes_past_the_redirect(client):
+    assert "/static/js/auth.js" in client.get("/").text
+    js = (ROOT / "app" / "static" / "js" / "auth.js").read_text()
+    assert 'fetch("/healthz", { redirect: "manual"' in js  # a proxy's 302 is readable, not a CORS error
+    assert '.delete("/")' in js  # otherwise the service worker serves the stale page, not the login
+    assert client.get("/static/js/auth.js").status_code == 200
+
+
 def test_pages_link_the_manifest_and_apple_meta_tags(client):
     html = client.get("/").text
     assert '<link rel="manifest" href="/manifest.webmanifest">' in html
